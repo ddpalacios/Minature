@@ -22,7 +22,7 @@
 
 
     """
-
+import operator
 import random
 
 
@@ -30,15 +30,40 @@ class Genome:
     def __init__(self, ID, neat_environment):
         self.ID = ID
         self.neat_environment = neat_environment
+        self.fitness_score = 0
+        self.adjusted_fitness_score = 0
         self.Node_Genes = {}
         self.Connection_Genes = {}
+        self.Species = None
+
+    def set_species(self, species):
+        self.Species = species
+        species.add_member(genome=self)
+
+    def getFitness(self):
+        return self.fitness_score
+
+    def setFitness(self, fitness):
+        self.fitness_score = fitness
+
+    def calculate_adjusted_fitness(self):
+        species_member_size = len(self.Species.get_members())
+        self.adjusted_fitness_score = self.fitness_score / species_member_size
+
+    def __sort_connection_genes(self):
+        sorted_connection_genes = {}
+        for conn in (sorted(self.Connection_Genes.values(), key=operator.attrgetter('InnovationNumber'))):
+            pair = (conn.in_node, conn.out_node)
+            sorted_connection_genes[pair] = conn
+        self.Connection_Genes = sorted_connection_genes
+        return self.Connection_Genes
 
     def add_node(self):
+        if len(self.Connection_Genes) == 0:
+            return
         total_attempts = 100
         for attempt in range(total_attempts):
             random_connection = random.choice(list(self.Connection_Genes.values()))
-            if not random_connection.is_expressed:
-                continue
             random_connection.is_expressed = False
             new_node = self.neat_environment.get_node(len(self.Node_Genes) + 1)
             new_node.NodeType = 'hidden'
@@ -47,11 +72,14 @@ class Genome:
             new_node.NodeType_Code = (in_node.NodeType_Code + out_node.NodeType_Code) / 2
             new_connection1 = self.neat_environment.get_connection(in_node.ID, new_node.ID)
             new_connection2 = self.neat_environment.get_connection(new_node.ID, out_node.ID)
-            new_connection1.Genome = self
-            new_connection2.Genome = self
+            new_connection1.setGenome(self)
+            new_connection1.setWeight(1)
+            new_connection2.setGenome(self)
+            new_connection2.setWeight(random_connection.getWeight())
             self.Node_Genes[new_node.ID] = new_node
             self.Connection_Genes[new_connection1.in_node, new_connection1.out_node] = new_connection1
             self.Connection_Genes[new_connection2.in_node, new_connection2.out_node] = new_connection2
+            self.__sort_connection_genes()
             return new_node
 
     def add_connection(self):
@@ -63,16 +91,15 @@ class Genome:
                 continue
             if node1.NodeType_Code < node2.NodeType_Code:
                 new_connection = self.neat_environment.get_connection(in_node=node1.ID, out_node=node2.ID)
-                new_connection.Genome = self
             else:
                 new_connection = self.neat_environment.get_connection(in_node=node2.ID, out_node=node1.ID)
-                new_connection.Genome = self
 
             if (new_connection.in_node, new_connection.out_node) in self.Connection_Genes:
                 continue
             else:
-                new_connection.Genome = self
+                new_connection.setGenome(self)
                 self.Connection_Genes[new_connection.in_node, new_connection.out_node] = new_connection
+                self.__sort_connection_genes()
                 return
 
         # self.SpeciesID = None
@@ -81,6 +108,48 @@ class Genome:
         # self.hidden_nodes = {}
         # self.sensor_nodes = {}
         # self.output_nodes = {}
+
+    def mate(self, genome):
+        genome_innovation_number_idx = 0
+        mate_genome_innovation_number_idx = 0
+        matching_genes = 0
+        disjoint_genes = 0
+        excess_genes = 0
+        offspring_genome = self.neat_environment.generate_empty_genome()
+
+        while genome_innovation_number_idx < len(self.Connection_Genes) and mate_genome_innovation_number_idx < len(
+                genome.Connection_Genes):
+            parent1_connection_gene = list(self.Connection_Genes.values())[genome_innovation_number_idx]
+            parent2_connection_gene = list(genome.Connection_Genes.values())[mate_genome_innovation_number_idx]
+
+            parent1_innovation_number = parent1_connection_gene.InnovationNumber
+            parent2_innovation_number = parent2_connection_gene.InnovationNumber
+
+            if parent1_innovation_number == parent2_innovation_number:
+                matching_genes += 1
+                random_connection = random.choice([parent1_connection_gene, parent2_connection_gene])
+                offspring_genome.Connection_Genes[
+                    (random_connection.in_node, random_connection.out_node)] = random_connection
+                genome_innovation_number_idx += 1
+                mate_genome_innovation_number_idx += 1
+
+            elif parent1_innovation_number > parent2_innovation_number:
+                disjoint_genes += 1
+                mate_genome_innovation_number_idx += 1
+            else:
+                disjoint_genes += 1
+                genome_innovation_number_idx += 1
+                offspring_genome.Connection_Genes[
+                    (parent1_connection_gene.in_node, parent1_connection_gene.out_node)] = parent1_connection_gene
+
+        while genome_innovation_number_idx < len(self.Connection_Genes):
+            excess_connection_gene = list(self.Connection_Genes.values())[genome_innovation_number_idx]
+            offspring_genome.Connection_Genes[
+                (excess_connection_gene.in_node, excess_connection_gene.out_node)] = excess_connection_gene
+            genome_innovation_number_idx += 1
+            excess_genes += 1
+
+        return offspring_genome
 
     # def getNodeGenes(self):
     #     pass

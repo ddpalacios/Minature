@@ -3,7 +3,7 @@ class Node:
         self.neat_environment = neat_environment
         self.ID = ID
         self.NodeType = node_type
-        if self.NodeType == 'sensor':
+        if self.NodeType == 'sensor' or self.NodeType == 'bias':
             self.NodeType_Code = .1
         else:
             self.NodeType_Code = .9

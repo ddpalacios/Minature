@@ -1,14 +1,20 @@
+import operator
 import random
 import numpy as np
 from Node import Node
 from Genome import Genome
 from ConnectionGene import ConnectionGene
+from Species import Species
 
 
 class NEAT:
     def __init__(self, environment=None, total_population=10, total_input_nodes=0, total_output_nodes=0,
                  add_connection_probability=.3,
-                 add_node_probability=.2, include_bias=False):
+                 add_node_probability=.2, include_bias=False,
+                 excess_coefficient=1,
+                 disjoint_coefficient=1,
+                 weight_coefficient=1
+                 ):
         self.ID = 0
         self.Environment = environment
         self.total_population = total_population
@@ -20,10 +26,14 @@ class NEAT:
         self.add_connection_probability = add_connection_probability
         self.add_node_probability = add_node_probability
         self.InnovationNumber = 0
+        self.excess_coefficient = excess_coefficient
+        self.disjoint_coefficient = disjoint_coefficient
+        self.weight_coefficient = weight_coefficient
 
         self.list_of_Connection_Genes = {}
         self.list_of_Nodes = {}
         self.list_of_Genomes = {}
+        self.list_of_Species = {}
 
     def get_node(self, node_id):
         if node_id in self.list_of_Nodes:
@@ -39,7 +49,8 @@ class NEAT:
         if (in_node, out_node) in self.list_of_Connection_Genes:
             return self.list_of_Connection_Genes[in_node, out_node]
         else:
-            connection_gene = ConnectionGene(innovation_number=len(self.list_of_Connection_Genes) + 1,
+            self.InnovationNumber = len(self.list_of_Connection_Genes) + 1
+            connection_gene = ConnectionGene(innovation_number=self.InnovationNumber,
                                              neat_environment=self,
                                              in_node=in_node,
                                              out_node=out_node,
@@ -47,7 +58,23 @@ class NEAT:
                                              is_expressed=True)
 
             self.list_of_Connection_Genes[connection_gene.in_node, connection_gene.out_node] = connection_gene
+            self.__sort_connection_genes()
             return connection_gene
+
+    def __sort_genomes(self):
+        sorted_genomes = {}
+        for genome in (sorted(self.list_of_Genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
+            sorted_genomes[genome.ID] = genome
+        self.list_of_Genomes = sorted_genomes
+        return self.list_of_Genomes
+
+    def __sort_connection_genes(self):
+        sorted_connection_genes = {}
+        for conn in (sorted(self.list_of_Connection_Genes.values(), key=operator.attrgetter('InnovationNumber'))):
+            pair = (conn.in_node, conn.out_node)
+            sorted_connection_genes[pair] = conn
+        self.list_of_Connection_Genes = sorted_connection_genes
+        return self.list_of_Connection_Genes
 
     def __generate_base_nodes(self):
         node_id = 1
@@ -63,41 +90,81 @@ class NEAT:
             self.list_of_Nodes[node_id] = Node(self, node_id, 'output')
             node_id += 1
 
+    def generate_empty_genome(self):
+        genome_id = len(self.list_of_Genomes) + 1
+        new_genome = Genome(neat_environment=self, ID=genome_id)
+        for n_id in range(self.total_nodes):
+            new_node = self.get_node(node_id=n_id + 1)
+            new_genome.Node_Genes[new_node.ID] = new_node
+        self.list_of_Genomes[genome_id] = new_genome
+
+        return new_genome
+
     def __generate_base_genomes(self):
         genome_id = 0
+        initial_species = Species(ID=1, neat_environment=self)
         for g_id in range(self.total_population):
             new_genome = Genome(neat_environment=self, ID=genome_id)
+            new_genome.set_species(initial_species)
             for n_id in range(self.total_nodes):
                 new_node = self.get_node(node_id=n_id + 1)
                 new_genome.Node_Genes[new_node.ID] = new_node
             self.list_of_Genomes[genome_id] = new_genome
             genome_id += 1
+        random_genome = random.choice(list(initial_species.get_members().values()))
+        initial_species.set_representative(random_genome)
+        self.list_of_Species[initial_species.ID] = initial_species
 
     def initialize(self):
         self.__generate_base_nodes()
         self.__generate_base_genomes()
+
+    def evolve(self):
+
+        for idx in range(len(self.list_of_Genomes)):
+            genome = self.list_of_Genomes[idx]
+            genome.calculate_adjusted_fitness()
+        sorted_genomes_by_adjusted_fitness = self.__sort_genomes()
+        worst_genome = sorted_genomes_by_adjusted_fitness[0]  # TODO: Add condition statement if worst genome has lived long enough
+        del self.list_of_Genomes[worst_genome.ID]
 
 
 if __name__ == '__main__':
     neat_environment = NEAT(total_population=10,
                             total_input_nodes=3,
                             total_output_nodes=2,
-                            include_bias=False)
+                            include_bias=True)
 
     neat_environment.initialize()
     print("Total Nodes", neat_environment.total_nodes)
-    for n in list(neat_environment.list_of_Genomes):
-        genome = neat_environment.list_of_Genomes[n]
+    # for n in list(neat_environment.list_of_Genomes):
+    #     genome = neat_environment.list_of_Genomes[n]
+    #
+    #     if n == 0:
+    #         genome.add_connection()
+    #         genome.add_node()
+    #
+    #         print("genome", 'total connection genes', len(genome.Connection_Genes),
+    #               list(genome.Connection_Genes.keys()))
+    #         print("genome", 'total nodes', len(genome.Node_Genes), list(genome.Node_Genes.keys()))
+    #
+    genome1 = neat_environment.generate_empty_genome()
+    genome1.add_connection()
+    genome1.add_connection()
+    genome1.add_connection()
+    genome1.add_node()
+    genome1.add_connection()
 
-        if n == 0:
-            genome.add_connection()
-            genome.add_node()
-            genome.add_node()
+    genome2 = neat_environment.generate_empty_genome()
+    genome2.add_connection()
+    genome2.add_connection()
+    genome2.add_connection()
+    genome2.add_node()
 
+    offspring = genome2.mate(genome1)
 
-            print("genome", 'total connection genes', len(genome.Connection_Genes),
-                  list(genome.Connection_Genes.keys()))
-            print("genome", 'total nodes', len(genome.Node_Genes), list(genome.Node_Genes.keys()))
+    print(genome1, genome2)
+    print('offspring', offspring, 'Connections made', len(offspring.Connection_Genes))
 
     # def __init__(self,
     #              ins,
