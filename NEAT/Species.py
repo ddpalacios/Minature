@@ -1,3 +1,7 @@
+import operator
+import random
+
+
 class Species:
     def __init__(self, ID, neat_environment):
         self.ID = ID
@@ -5,6 +9,26 @@ class Species:
         self.representative = None
         self.members = {}
         self.average_fitness = 0.0
+
+    def breed(self):
+        random_genome1 = random.choice(list(self.members.values()))
+        random_genome2 = random.choice(list(self.members.values()))
+        if random_genome1.getFitness() > random_genome2.getFitness():
+            offspring = random_genome1.mate(random_genome2)
+        else:
+            offspring = random_genome2.mate(random_genome1)
+        offspring.mutate()
+        offspring.set_species(self)
+        return offspring
+
+
+    def calculate_average_fitness(self):
+        total_fitness = 0
+        for idx in range(len(self.members)):
+            genome = self.members[idx]
+            total_fitness += genome.getFitness()
+
+        self.average_fitness = total_fitness / len(self.members)
 
     def get_compatibility_distance(self, genome):
         genome_innovation_number_idx = 0
@@ -56,7 +80,8 @@ class Species:
                 normalized_genome_size = len(genome.Connection_Genes)
 
         compatibility_distance = ((self.neat_environment.excess_coefficient * excess_genes) / normalized_genome_size) + \
-                                 ((self.neat_environment.disjoint_coefficient * disjoint_genes) / normalized_genome_size) + \
+                                 ((
+                                          self.neat_environment.disjoint_coefficient * disjoint_genes) / normalized_genome_size) + \
                                  self.neat_environment.weight_coefficient * average_weight_difference
 
         return compatibility_distance

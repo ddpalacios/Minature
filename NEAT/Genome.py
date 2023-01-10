@@ -24,6 +24,7 @@
     """
 import operator
 import random
+import numpy as np
 
 
 class Genome:
@@ -36,9 +37,17 @@ class Genome:
         self.Connection_Genes = {}
         self.Species = None
 
+    def mutate(self):
+        if self.neat_environment.add_connection_probability > np.random.randn():
+            self.add_connection()
+
+        if self.neat_environment.add_node_probability > np.random.randn():
+            self.add_node()
+
     def set_species(self, species):
         self.Species = species
-        species.add_member(genome=self)
+        if species is not None:
+            species.add_member(genome=self)
 
     def getFitness(self):
         return self.fitness_score

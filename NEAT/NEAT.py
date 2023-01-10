@@ -1,16 +1,34 @@
 import operator
 import random
 import numpy as np
-from Node import Node
-from Genome import Genome
-from ConnectionGene import ConnectionGene
-from Species import Species
+from NEAT.Node import Node
+from NEAT.Genome import Genome
+from NEAT.ConnectionGene import ConnectionGene
+from NEAT.Species import Species
+from Environment import Environment
+import pygame as pg
+
+WindowWidth = 1600
+WindowHeight = 1000
+TotalPopulation = 10
+TotalEnergyBlocks = TotalPopulation // 2
+ActiveCellColor = (0, 0, 255)
+BackgroundColor = (0, 0, 0)
+EnergyCellColor = (255, 0, 0)
+GridColor = (60, 60, 60)
+PixelSize = 30
+screen = pg.display.set_mode((WindowWidth, WindowHeight))
+pg.display.set_caption("Miniature")
+clock = pg.time.Clock()
+FramesPerSecond = 90
+total_population = 50
 
 
 class NEAT:
     def __init__(self, environment=None, total_population=10, total_input_nodes=0, total_output_nodes=0,
                  add_connection_probability=.3,
                  add_node_probability=.2, include_bias=False,
+                 speices_threshold=3,
                  excess_coefficient=1,
                  disjoint_coefficient=1,
                  weight_coefficient=1
@@ -29,11 +47,13 @@ class NEAT:
         self.excess_coefficient = excess_coefficient
         self.disjoint_coefficient = disjoint_coefficient
         self.weight_coefficient = weight_coefficient
+        self.species_threshold = speices_threshold
 
         self.list_of_Connection_Genes = {}
         self.list_of_Nodes = {}
         self.list_of_Genomes = {}
         self.list_of_Species = {}
+        self.initialize()
 
     def get_node(self, node_id):
         if node_id in self.list_of_Nodes:
@@ -44,6 +64,40 @@ class NEAT:
             self.list_of_Nodes[node.ID] = node
 
         return node
+
+    def set_environment(self, env):
+        self.Environment = env
+    def __sort_species(self):
+        sorted_species = {}
+        for species in (sorted(self.list_of_Species.values(), key=operator.attrgetter('average_fitness'))):
+            sorted_species[species.ID] = species
+        self.list_of_Species = sorted_species
+        return self.list_of_Species
+
+    def __reassign_species(self):
+        for genome_idx in range(len(self.list_of_Genomes)):
+            if genome_idx not in self.list_of_Genomes:
+                continue
+            genome = self.list_of_Genomes[genome_idx]
+            genome.set_species(None)
+
+            found_species = False
+            for species_idx in range(len(self.list_of_Species)):
+                species = self.list_of_Species[species_idx + 1]
+                if species.is_compatible(genome=genome):
+                    found_species = True
+                    species.add_member(genome)
+                    break
+            if not found_species:
+                new_species = self.__generate_new_species(genome=genome)
+                self.list_of_Species[new_species.ID] = new_species
+
+        print('done')
+
+    def __generate_new_species(self, genome):
+        species = Species(ID=len(self.list_of_Species) + 1, neat_environment=self)
+        genome.set_species(species)
+        return species
 
     def get_connection(self, in_node, out_node):
         if (in_node, out_node) in self.list_of_Connection_Genes:
@@ -122,21 +176,41 @@ class NEAT:
     def evolve(self):
 
         for idx in range(len(self.list_of_Genomes)):
+            if idx not in self.list_of_Genomes:
+                continue
             genome = self.list_of_Genomes[idx]
             genome.calculate_adjusted_fitness()
+
         sorted_genomes_by_adjusted_fitness = self.__sort_genomes()
-        worst_genome = sorted_genomes_by_adjusted_fitness[0]  # TODO: Add condition statement if worst genome has lived long enough
+        worst_genome = sorted_genomes_by_adjusted_fitness[
+            0]  # TODO: Add condition statement if worst genome has lived long enough
         del self.list_of_Genomes[worst_genome.ID]
+        for species_idx in range(len(self.list_of_Species)):
+            species = self.list_of_Species[species_idx + 1]
+            species.calculate_average_fitness()
+            self.__sort_species()
+            species_for_breeding = random.choice(list(self.list_of_Species.values()))
+            species_for_breeding.breed()
+            self.__reassign_species()
 
 
 if __name__ == '__main__':
+    environment = Environment(env_width=WindowWidth,
+                              env_height=WindowHeight,
+                              frames_per_second=FramesPerSecond,
+                              total_population=TotalPopulation,
+                              total_energy_blocks=TotalEnergyBlocks,
+                              pixel_size=PixelSize)
+
     neat_environment = NEAT(total_population=10,
                             total_input_nodes=3,
                             total_output_nodes=2,
                             include_bias=True)
 
-    neat_environment.initialize()
+    environment.set_neat_environment(neat_environment)
+
     print("Total Nodes", neat_environment.total_nodes)
+    neat_environment.evolve()
     # for n in list(neat_environment.list_of_Genomes):
     #     genome = neat_environment.list_of_Genomes[n]
     #

@@ -25,6 +25,7 @@ class Environment:
         self.TotalGenerations = 0
         self.NodeCount = 0
         self.ConnectionCount = 0
+        self.neat_environment = None
         self.create_new_environment_record()
         self.id = self.sql_db.execute_query("SELECT MAX(id) FROM {}".format(self.entity_name)).fetchone()[0]
         self.active_cell_entities = pg.sprite.Group()
@@ -32,6 +33,12 @@ class Environment:
         self.currentDateTime = datetime.datetime.timestamp(datetime.datetime.now()) * 1000
         self.active_cell_dicts = {}
         self.energy_cell_dicts = {}
+
+    def set_neat_environment(self, neat):
+        self.neat_environment = neat
+
+    def get_neat_environment(self):
+        return self.neat_environment
 
     def get_random_position(self):
         attempts = 0

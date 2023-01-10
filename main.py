@@ -4,7 +4,7 @@ from SQlite import SQLLite
 import pygame as pg
 from Cell import Cell
 from Energy import Energy
-
+from NEAT.NEAT import NEAT
 sql = SQLLite()
 WindowWidth = 1600
 WindowHeight = 1000
@@ -107,9 +107,11 @@ def draw_grid():
 
 def update():
     for idx, c in enumerate(environment.active_cell_entities):
+        genome = environment.neat_environment.list_of_Genomes[idx]
+        c.set_genome(genome=genome)
         vision__inputs = c.scan()
         c.move_randomly()
-
+    # environment.neat_environment.evolve()
     screen.fill(BackgroundColor)
     draw_grid()
     environment.active_cell_entities.update()
@@ -141,7 +143,14 @@ def start():
 
 
 if __name__ == '__main__':
-    sql.create_miniature_environment_tables()
-    print("Environment #", environment.id, "Was made")
-    print("there are", get_total_environments(), 'Environment(s) Available')
+    # sql.create_miniature_environment_tables()
+    # print("Environment #", environment.id, "Was made")
+    # print("there are", get_total_environments(), 'Environment(s) Available')
+
+    neat_environment = NEAT(total_population=10,
+                            total_input_nodes=3,
+                            total_output_nodes=2,
+                            include_bias=True)
+
+    environment.set_neat_environment(neat_environment)
     start()

@@ -15,6 +15,7 @@ class Cell(pg.sprite.Sprite):
         self.entity_name = 'Cell'
         self.EnvID = self.environment.id
         self.Species = None
+        self.genome = None
         self.SpeciesID = "null"
         self.AdjustedFitness = 0
         self.fitness = 0
@@ -40,6 +41,8 @@ class Cell(pg.sprite.Sprite):
             "UPDATE {1} SET EnvID = {0} WHERE id = {2}".format(self.EnvID, self.entity_name, self.id))
         self.environment.add_active_cell()
 
+    def set_genome(self, genome):
+        self.genome = genome
     def hit_wall(self, new_x, new_y):
         width_boundary = self.environment.env_width - self.environment.pixelSize
         height_boundary = self.environment.env_height - self.environment.pixelSize
