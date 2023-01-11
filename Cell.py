@@ -43,6 +43,7 @@ class Cell(pg.sprite.Sprite):
 
     def set_genome(self, genome):
         self.genome = genome
+
     def hit_wall(self, new_x, new_y):
         width_boundary = self.environment.env_width - self.environment.pixelSize
         height_boundary = self.environment.env_height - self.environment.pixelSize

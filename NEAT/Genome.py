@@ -37,6 +37,27 @@ class Genome:
         self.Connection_Genes = {}
         self.Species = None
 
+    def forward(self, inputs):
+        for node_idx in range(len(inputs)):
+            sensor_node = self.Node_Genes[node_idx + 1]
+            if sensor_node.NodeType_Code == .1:
+                sensor_node.set_input(inputs[node_idx])
+
+        # for hidden_node_idx in range(len(inputs), len(self.Node_Genes) + self.neat_environment.total_output_nodes):
+        #     node = self.Node_Genes[hidden_node_idx + 1]
+        #     if .1 < node.NodeType_Code < .9:
+        #         node.calculate()
+        #
+        # output_probability = []
+        # for output_node_idx in range(self.neat_environment.total_output_nodes):
+        #     output_node = self.Node_Genes[len(self.Node_Genes) - output_node_idx + 1]
+        #     if output_node.NodeType == .9:
+        #         output = output_node.calculate()
+        #         output_probability.append(output)
+        #
+        # output = output_probability.index(max(output_probability))
+        # return output
+
     def mutate(self):
         if self.neat_environment.add_connection_probability > np.random.randn():
             self.add_connection()
@@ -59,14 +80,6 @@ class Genome:
         species_member_size = len(self.Species.get_members())
         self.adjusted_fitness_score = self.fitness_score / species_member_size
 
-    def __sort_connection_genes(self):
-        sorted_connection_genes = {}
-        for conn in (sorted(self.Connection_Genes.values(), key=operator.attrgetter('InnovationNumber'))):
-            pair = (conn.in_node, conn.out_node)
-            sorted_connection_genes[pair] = conn
-        self.Connection_Genes = sorted_connection_genes
-        return self.Connection_Genes
-
     def add_node(self):
         if len(self.Connection_Genes) == 0:
             return
@@ -88,7 +101,12 @@ class Genome:
             self.Node_Genes[new_node.ID] = new_node
             self.Connection_Genes[new_connection1.in_node, new_connection1.out_node] = new_connection1
             self.Connection_Genes[new_connection2.in_node, new_connection2.out_node] = new_connection2
-            self.__sort_connection_genes()
+            self.Node_Genes[new_connection1.in_node].add_connection_gene(connection_gene=new_connection1)
+            self.Node_Genes[new_connection1.out_node].add_connection_gene(connection_gene=new_connection1)
+            self.Node_Genes[new_connection2.in_node].add_connection_gene(connection_gene=new_connection2)
+            self.Node_Genes[new_connection2.out_node].add_connection_gene(connection_gene=new_connection2)
+            sorted_genes = self.neat_environment.sort_connection_genes(self.Connection_Genes)
+            self.Connection_Genes = sorted_genes
             return new_node
 
     def add_connection(self):
@@ -108,7 +126,10 @@ class Genome:
             else:
                 new_connection.setGenome(self)
                 self.Connection_Genes[new_connection.in_node, new_connection.out_node] = new_connection
-                self.__sort_connection_genes()
+                self.Node_Genes[new_connection.in_node].add_connection_gene(connection_gene=new_connection)
+                self.Node_Genes[new_connection.out_node].add_connection_gene(connection_gene=new_connection)
+                sorted_genes = self.neat_environment.sort_connection_genes(self.Connection_Genes)
+                self.Connection_Genes = sorted_genes
                 return
 
         # self.SpeciesID = None

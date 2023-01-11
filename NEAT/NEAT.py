@@ -1,34 +1,19 @@
 import operator
 import random
 import numpy as np
-from NEAT.Node import Node
-from NEAT.Genome import Genome
-from NEAT.ConnectionGene import ConnectionGene
-from NEAT.Species import Species
+from Node import Node
+from Genome import Genome
+from ConnectionGene import ConnectionGene
+from Species import Species
 from Environment import Environment
 import pygame as pg
-
-WindowWidth = 1600
-WindowHeight = 1000
-TotalPopulation = 10
-TotalEnergyBlocks = TotalPopulation // 2
-ActiveCellColor = (0, 0, 255)
-BackgroundColor = (0, 0, 0)
-EnergyCellColor = (255, 0, 0)
-GridColor = (60, 60, 60)
-PixelSize = 30
-screen = pg.display.set_mode((WindowWidth, WindowHeight))
-pg.display.set_caption("Miniature")
-clock = pg.time.Clock()
-FramesPerSecond = 90
-total_population = 50
 
 
 class NEAT:
     def __init__(self, environment=None, total_population=10, total_input_nodes=0, total_output_nodes=0,
                  add_connection_probability=.3,
                  add_node_probability=.2, include_bias=False,
-                 speices_threshold=3,
+                 species_threshold=3,
                  excess_coefficient=1,
                  disjoint_coefficient=1,
                  weight_coefficient=1
@@ -47,7 +32,7 @@ class NEAT:
         self.excess_coefficient = excess_coefficient
         self.disjoint_coefficient = disjoint_coefficient
         self.weight_coefficient = weight_coefficient
-        self.species_threshold = speices_threshold
+        self.species_threshold = species_threshold
 
         self.list_of_Connection_Genes = {}
         self.list_of_Nodes = {}
@@ -67,6 +52,7 @@ class NEAT:
 
     def set_environment(self, env):
         self.Environment = env
+
     def __sort_species(self):
         sorted_species = {}
         for species in (sorted(self.list_of_Species.values(), key=operator.attrgetter('average_fitness'))):
@@ -112,7 +98,8 @@ class NEAT:
                                              is_expressed=True)
 
             self.list_of_Connection_Genes[connection_gene.in_node, connection_gene.out_node] = connection_gene
-            self.__sort_connection_genes()
+            sorted_genes = self.sort_connection_genes(self.list_of_Connection_Genes)
+            self.list_of_Connection_Genes = sorted_genes
             return connection_gene
 
     def __sort_genomes(self):
@@ -122,13 +109,13 @@ class NEAT:
         self.list_of_Genomes = sorted_genomes
         return self.list_of_Genomes
 
-    def __sort_connection_genes(self):
+    def sort_connection_genes(self, list_of_connection_genes):
         sorted_connection_genes = {}
-        for conn in (sorted(self.list_of_Connection_Genes.values(), key=operator.attrgetter('InnovationNumber'))):
+        for conn in (sorted(list_of_connection_genes.values(), key=operator.attrgetter('InnovationNumber'))):
             pair = (conn.in_node, conn.out_node)
             sorted_connection_genes[pair] = conn
-        self.list_of_Connection_Genes = sorted_connection_genes
-        return self.list_of_Connection_Genes
+        list_of_connection_genes = sorted_connection_genes
+        return list_of_connection_genes
 
     def __generate_base_nodes(self):
         node_id = 1
@@ -182,8 +169,7 @@ class NEAT:
             genome.calculate_adjusted_fitness()
 
         sorted_genomes_by_adjusted_fitness = self.__sort_genomes()
-        worst_genome = sorted_genomes_by_adjusted_fitness[
-            0]  # TODO: Add condition statement if worst genome has lived long enough
+        worst_genome = sorted_genomes_by_adjusted_fitness[0]  # TODO: Add condition statement if worst genome has lived long enough
         del self.list_of_Genomes[worst_genome.ID]
         for species_idx in range(len(self.list_of_Species)):
             species = self.list_of_Species[species_idx + 1]
@@ -195,22 +181,13 @@ class NEAT:
 
 
 if __name__ == '__main__':
-    environment = Environment(env_width=WindowWidth,
-                              env_height=WindowHeight,
-                              frames_per_second=FramesPerSecond,
-                              total_population=TotalPopulation,
-                              total_energy_blocks=TotalEnergyBlocks,
-                              pixel_size=PixelSize)
-
     neat_environment = NEAT(total_population=10,
                             total_input_nodes=3,
                             total_output_nodes=2,
                             include_bias=True)
 
-    environment.set_neat_environment(neat_environment)
-
     print("Total Nodes", neat_environment.total_nodes)
-    neat_environment.evolve()
+    # neat_environment.evolve()
     # for n in list(neat_environment.list_of_Genomes):
     #     genome = neat_environment.list_of_Genomes[n]
     #
@@ -224,10 +201,7 @@ if __name__ == '__main__':
     #
     genome1 = neat_environment.generate_empty_genome()
     genome1.add_connection()
-    genome1.add_connection()
-    genome1.add_connection()
     genome1.add_node()
-    genome1.add_connection()
 
     genome2 = neat_environment.generate_empty_genome()
     genome2.add_connection()

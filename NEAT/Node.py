@@ -3,10 +3,28 @@ class Node:
         self.neat_environment = neat_environment
         self.ID = ID
         self.NodeType = node_type
+        self.input = None
+        self.Connection_Genes = {}
         if self.NodeType == 'sensor' or self.NodeType == 'bias':
             self.NodeType_Code = .1
         else:
             self.NodeType_Code = .9
+
+    def add_connection_gene(self, connection_gene):
+        in_node, out_node = connection_gene.in_node, connection_gene.out_node
+        self.Connection_Genes[in_node, out_node] = connection_gene
+        sorted_genes = self.neat_environment.sort_connection_genes(self.Connection_Genes)
+        self.Connection_Genes = sorted_genes
+
+
+    def calculate(self):
+        pass
+
+    def set_input(self, input):
+        self.input = input
+
+    def getInput(self):
+        return self.input
 
 
 # import numpy as np
