@@ -34,14 +34,39 @@ class Genome:
         self.fitness_score = 0
         self.adjusted_fitness_score = 0
         self.Node_Genes = {}
+        self.hidden_nodes = {}
+        self.output_nodes = {}
         self.Connection_Genes = {}
         self.Species = None
+        self.CellBody = None
+
+    def set_cell_body(self, cell):
+        self.CellBody = cell
+
+    def getCellBody(self):
+        return self.CellBody
 
     def forward(self, inputs):
         for node_idx in range(len(inputs)):
             sensor_node = self.Node_Genes[node_idx + 1]
             if sensor_node.NodeType_Code == .1:
                 sensor_node.set_input(inputs[node_idx])
+
+        for node_idx in range(len(self.hidden_nodes)):
+            hidden_node = self.hidden_nodes[node_idx + 1]
+            hidden_node.calculate()
+
+        input_probability = []
+        for output_node in list(self.output_nodes.values()):
+            input_value = output_node.calculate()
+            input_probability.append(input_value)
+
+        output = input_probability.index(max(input_probability))
+        return output
+
+        # for node_idx in range(len(self.output_nodes)):
+        #     output_node = self.output_nodes[node_idx + 1]
+        #     output_node.calculate()
 
         # for hidden_node_idx in range(len(inputs), len(self.Node_Genes) + self.neat_environment.total_output_nodes):
         #     node = self.Node_Genes[hidden_node_idx + 1]
@@ -107,6 +132,7 @@ class Genome:
             self.Node_Genes[new_connection2.out_node].add_connection_gene(connection_gene=new_connection2)
             sorted_genes = self.neat_environment.sort_connection_genes(self.Connection_Genes)
             self.Connection_Genes = sorted_genes
+            self.hidden_nodes[new_node.ID] = new_node
             return new_node
 
     def add_connection(self):

@@ -1,4 +1,5 @@
 import pygame as pg
+pg.init()
 import pygame.sprite
 from SQlite import SQLLite
 import datetime

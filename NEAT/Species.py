@@ -15,17 +15,23 @@ class Species:
         random_genome2 = random.choice(list(self.members.values()))
         if random_genome1.getFitness() > random_genome2.getFitness():
             offspring = random_genome1.mate(random_genome2)
+            offspring.set_cell_body(random_genome1.getCellBody())
         else:
             offspring = random_genome2.mate(random_genome1)
+            offspring.set_cell_body(random_genome2.getCellBody())
+
         offspring.mutate()
         offspring.set_species(self)
         return offspring
 
-
     def calculate_average_fitness(self):
         total_fitness = 0
+        genome_idx = 1
         for idx in range(len(self.members)):
-            genome = self.members[idx]
+            if genome_idx not in self.members:
+                genome_idx += 1
+                continue
+            genome = self.members[genome_idx]
             total_fitness += genome.getFitness()
 
         self.average_fitness = total_fitness / len(self.members)
@@ -98,6 +104,9 @@ class Species:
 
     def add_member(self, genome):
         self.members[genome.ID] = genome
+
+    def getRepresentative(self):
+        return self.representative
 
     def set_representative(self, genome):
         self.representative = genome

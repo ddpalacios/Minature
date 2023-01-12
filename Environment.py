@@ -1,6 +1,7 @@
 import datetime
 from SQlite import SQLLite
 import pygame as pg
+pg.init()
 import random
 
 

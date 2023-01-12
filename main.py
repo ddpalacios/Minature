@@ -2,10 +2,11 @@ import sys
 from Environment import Environment
 from SQlite import SQLLite
 import pygame as pg
+pg.init()
+
 from Cell import Cell
 from Energy import Energy
 from NEAT.NEAT import NEAT
-
 sql = SQLLite()
 WindowWidth = 1600
 WindowHeight = 1000
@@ -94,7 +95,9 @@ def check_events():
             if mouse_clicked:
                 mouse_event = event.button
                 if mouse_event == 1:
-                    Cell(environment, xpos, ypos, ActiveCellColor)
+                    active_cell = Cell(environment, xpos, ypos, ActiveCellColor)
+                    genome = environment.neat_environment.generate_empty_genome()
+                    active_cell.set_genome(genome)
                 if mouse_event == 3:
                     Energy(environment, xpos, ypos, EnergyCellColor)
 
@@ -107,22 +110,26 @@ def draw_grid():
 
 
 def update():
-    for idx, active_cell in enumerate(environment.active_cell_entities):
-        genome = environment.neat_environment.list_of_Genomes[idx]
-        active_cell.set_genome(genome=genome)
+    for genome_idx, active_cell in enumerate(environment.active_cell_entities):
+        if genome_idx + 1 not in neat_environment.list_of_Genomes:
+            continue
+        genome = active_cell.getGenome()
         vision_inputs = active_cell.scan()
         output = genome.forward(vision_inputs)
         if output == 0:
-            active_cell.move_up()
+            active_cell.move_randomly()
         elif output == 1:
-            active_cell.move_down()
+            active_cell.move_up()
         elif output == 2:
-            active_cell.move_left()
+            active_cell.move_down()
         elif output == 3:
+            active_cell.move_left()
+        elif output == 4:
             active_cell.move_right()
+        active_cell.TotalTimeAliveInTicks += 1
 
-        active_cell.move_randomly()
-    # environment.neat_environment.evolve()
+    if len(neat_environment.list_of_Genomes) > 1:
+        environment.neat_environment.evolve()
     screen.fill(BackgroundColor)
     draw_grid()
     environment.active_cell_entities.update()
@@ -158,10 +165,10 @@ if __name__ == '__main__':
     # print("Environment #", environment.id, "Was made")
     # print("there are", get_total_environments(), 'Environment(s) Available')
 
-    neat_environment = NEAT(total_population=10,
-                            total_input_nodes=24,
-                            total_output_nodes=5,
-                            include_bias=True)
+    neat_environment = NEAT(
+        total_input_nodes=24,
+        total_output_nodes=5,
+        include_bias=True)
 
     environment.set_neat_environment(neat_environment)
     start()

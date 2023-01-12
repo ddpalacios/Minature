@@ -1,5 +1,6 @@
 import datetime
 import pygame as pg
+pg.init()
 from SQlite import SQLLite
 import random
 
@@ -41,7 +42,11 @@ class Cell(pg.sprite.Sprite):
             "UPDATE {1} SET EnvID = {0} WHERE id = {2}".format(self.EnvID, self.entity_name, self.id))
         self.environment.add_active_cell()
 
+    def getGenome(self):
+        return self.genome
+
     def set_genome(self, genome):
+        genome.set_cell_body(self)
         self.genome = genome
 
     def hit_wall(self, new_x, new_y):

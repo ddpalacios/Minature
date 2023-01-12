@@ -1,12 +1,10 @@
 import operator
 import random
 import numpy as np
-from Node import Node
-from Genome import Genome
-from ConnectionGene import ConnectionGene
-from Species import Species
-from Environment import Environment
-import pygame as pg
+from NEAT.Node import Node
+from NEAT.Genome import Genome
+from NEAT.ConnectionGene import ConnectionGene
+from NEAT.Species import Species
 
 
 class NEAT:
@@ -61,18 +59,15 @@ class NEAT:
         return self.list_of_Species
 
     def __reassign_species(self):
-        for genome_idx in range(len(self.list_of_Genomes)):
-            if genome_idx not in self.list_of_Genomes:
-                continue
-            genome = self.list_of_Genomes[genome_idx]
+        for genome in list(self.list_of_Genomes.values()):
             genome.set_species(None)
 
             found_species = False
-            for species_idx in range(len(self.list_of_Species)):
-                species = self.list_of_Species[species_idx + 1]
+            for species in list(self.list_of_Species.values()):
                 if species.is_compatible(genome=genome):
                     found_species = True
                     species.add_member(genome)
+                    genome.set_species(species)
                     break
             if not found_species:
                 new_species = self.__generate_new_species(genome=genome)
@@ -83,6 +78,7 @@ class NEAT:
     def __generate_new_species(self, genome):
         species = Species(ID=len(self.list_of_Species) + 1, neat_environment=self)
         genome.set_species(species)
+        species.set_representative(genome)
         return species
 
     def get_connection(self, in_node, out_node):
@@ -102,12 +98,26 @@ class NEAT:
             self.list_of_Connection_Genes = sorted_genes
             return connection_gene
 
-    def __sort_genomes(self):
+    def remove_worst_genome(self):
         sorted_genomes = {}
+        senior_genomes = {}
+        sorted_senior_genomes = {}
+        worst_genome = None
         for genome in (sorted(self.list_of_Genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
             sorted_genomes[genome.ID] = genome
+            if genome.getCellBody().TotalTimeAliveInTicks >= 100:
+                senior_genomes[genome.ID] = genome.getCellBody()
         self.list_of_Genomes = sorted_genomes
-        return self.list_of_Genomes
+
+        if len(senior_genomes) > 0:
+            for cell in (sorted(senior_genomes.values(), key=operator.attrgetter('TotalTimeAliveInTicks'))):
+                genome = cell.getGenome()
+                sorted_senior_genomes[genome.ID] = genome
+
+            worst_genome = list(sorted_senior_genomes.values())[0]
+            # del self.list_of_Genomes[worst_genome.ID]
+
+        return worst_genome
 
     def sort_connection_genes(self, list_of_connection_genes):
         sorted_connection_genes = {}
@@ -133,57 +143,66 @@ class NEAT:
 
     def generate_empty_genome(self):
         genome_id = len(self.list_of_Genomes) + 1
+        initial_species = Species(ID=1, neat_environment=self)
+
         new_genome = Genome(neat_environment=self, ID=genome_id)
+        new_genome.set_species(initial_species)
+
         for n_id in range(self.total_nodes):
+
             new_node = self.get_node(node_id=n_id + 1)
             new_genome.Node_Genes[new_node.ID] = new_node
+            if n_id + 1 > self.total_sensor_nodes:
+                new_genome.output_nodes[n_id + 1] = new_node
         self.list_of_Genomes[genome_id] = new_genome
+
+        if initial_species.getRepresentative() is None:
+            initial_species.set_representative(new_genome)
+            self.list_of_Species[initial_species.ID] = initial_species
 
         return new_genome
 
-    def __generate_base_genomes(self):
-        genome_id = 0
-        initial_species = Species(ID=1, neat_environment=self)
-        for g_id in range(self.total_population):
-            new_genome = Genome(neat_environment=self, ID=genome_id)
-            new_genome.set_species(initial_species)
-            for n_id in range(self.total_nodes):
-                new_node = self.get_node(node_id=n_id + 1)
-                new_genome.Node_Genes[new_node.ID] = new_node
-            self.list_of_Genomes[genome_id] = new_genome
-            genome_id += 1
-        random_genome = random.choice(list(initial_species.get_members().values()))
-        initial_species.set_representative(random_genome)
-        self.list_of_Species[initial_species.ID] = initial_species
+    # def __generate_base_genomes(self):
+    #     genome_id = 0
+    #     initial_species = Species(ID=1, neat_environment=self)
+    #     for g_id in range(self.total_population):
+    #         new_genome = Genome(neat_environment=self, ID=genome_id)
+    #         new_genome.set_species(initial_species)
+    #
+    #         for n_id in range(self.total_nodes):
+    #             new_node = self.get_node(node_id=n_id + 1)
+    #             new_genome.Node_Genes[new_node.ID] = new_node
+    #             if n_id + 1 > self.total_sensor_nodes:
+    #                 new_genome.output_nodes[n_id + 1] = new_node
+    #         self.list_of_Genomes[genome_id] = new_genome
+    #
+    #         genome_id += 1
+    #     random_genome = random.choice(list(initial_species.get_members().values()))
+    #     initial_species.set_representative(random_genome)
+    #     self.list_of_Species[initial_species.ID] = initial_species
 
     def initialize(self):
         self.__generate_base_nodes()
-        self.__generate_base_genomes()
+        # self.__generate_base_genomes()
 
     def evolve(self):
-
-        for idx in range(len(self.list_of_Genomes)):
-            if idx not in self.list_of_Genomes:
-                continue
-            genome = self.list_of_Genomes[idx]
+        for genome in list(self.list_of_Genomes.values()):
             genome.calculate_adjusted_fitness()
-
-        sorted_genomes_by_adjusted_fitness = self.__sort_genomes()
-        worst_genome = sorted_genomes_by_adjusted_fitness[0]  # TODO: Add condition statement if worst genome has lived long enough
-        del self.list_of_Genomes[worst_genome.ID]
-        for species_idx in range(len(self.list_of_Species)):
-            species = self.list_of_Species[species_idx + 1]
+        worst_genome = self.remove_worst_genome()
+        for species in list(self.list_of_Species.values()):
             species.calculate_average_fitness()
             self.__sort_species()
-            species_for_breeding = random.choice(list(self.list_of_Species.values()))
-            species_for_breeding.breed()
-            self.__reassign_species()
+            if worst_genome is not None :
+                species_for_breeding = random.choice(list(self.list_of_Species.values()))
+                offspring = species_for_breeding.breed()
+                del self.list_of_Genomes[worst_genome.ID]
+                self.__reassign_species()
 
 
 if __name__ == '__main__':
     neat_environment = NEAT(total_population=10,
                             total_input_nodes=3,
-                            total_output_nodes=2,
+                            total_output_nodes=5,
                             include_bias=True)
 
     print("Total Nodes", neat_environment.total_nodes)
@@ -201,7 +220,14 @@ if __name__ == '__main__':
     #
     genome1 = neat_environment.generate_empty_genome()
     genome1.add_connection()
+    genome1.add_connection()
     genome1.add_node()
+
+    for node_gene_idx in range(len(genome1.Node_Genes)):
+        node_gene = genome1.Node_Genes[node_gene_idx + 1]
+        for connection_gene in list(node_gene.Connection_Genes.values()):
+            print('node id:', node_gene.ID, node_gene.NodeType, 'in_node', connection_gene.in_node, 'out_node',
+                  connection_gene.out_node, 'isExpressed', connection_gene.is_expressed)
 
     genome2 = neat_environment.generate_empty_genome()
     genome2.add_connection()
@@ -210,9 +236,9 @@ if __name__ == '__main__':
     genome2.add_node()
 
     offspring = genome2.mate(genome1)
-
-    print(genome1, genome2)
-    print('offspring', offspring, 'Connections made', len(offspring.Connection_Genes))
+    #
+    # print(genome1, genome2)
+    # print('offspring', offspring, 'Connections made', len(offspring.Connection_Genes))
 
     # def __init__(self,
     #              ins,

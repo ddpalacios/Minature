@@ -1,3 +1,10 @@
+import numpy as np
+
+
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+
 class Node:
     def __init__(self,neat_environment, ID, node_type=None):
         self.neat_environment = neat_environment
@@ -16,9 +23,15 @@ class Node:
         sorted_genes = self.neat_environment.sort_connection_genes(self.Connection_Genes)
         self.Connection_Genes = sorted_genes
 
-
     def calculate(self):
-        pass
+        z = 0.0
+        for connection_gene in list(self.Connection_Genes.values()):
+            if connection_gene is not connection_gene.is_expressed:
+                continue
+            in_node_input = connection_gene.in_node.getInput()
+            z += in_node_input * connection_gene.weight
+        self.input = sigmoid(z)
+        return self.input
 
     def set_input(self, input):
         self.input = input
