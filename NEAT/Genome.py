@@ -43,6 +43,7 @@ class Genome:
     def set_cell_body(self, cell):
         self.CellBody = cell
 
+
     def getCellBody(self):
         return self.CellBody
 
@@ -52,8 +53,7 @@ class Genome:
             if sensor_node.NodeType_Code == .1:
                 sensor_node.set_input(inputs[node_idx])
 
-        for node_idx in range(len(self.hidden_nodes)):
-            hidden_node = self.hidden_nodes[node_idx + 1]
+        for hidden_node in list(self.hidden_nodes.values()):
             hidden_node.calculate()
 
         input_probability = []
@@ -95,6 +95,9 @@ class Genome:
         if species is not None:
             species.add_member(genome=self)
 
+    def getSpecies(self):
+        return self.Species
+
     def getFitness(self):
         return self.fitness_score
 
@@ -102,8 +105,12 @@ class Genome:
         self.fitness_score = fitness
 
     def calculate_adjusted_fitness(self):
-        species_member_size = len(self.Species.get_members())
-        self.adjusted_fitness_score = self.fitness_score / species_member_size
+        if self.Species is not None:
+            species_member_size = len(self.Species.get_members())
+            self.adjusted_fitness_score = self.fitness_score / species_member_size
+        else:
+            species_member_size = len(self.neat_environment.list_of_Genomes)
+            self.adjusted_fitness_score = self.fitness_score / species_member_size
 
     def add_node(self):
         if len(self.Connection_Genes) == 0:

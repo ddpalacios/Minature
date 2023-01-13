@@ -2,6 +2,7 @@ import operator
 import random
 
 
+
 class Species:
     def __init__(self, ID, neat_environment):
         self.ID = ID
@@ -13,28 +14,30 @@ class Species:
     def breed(self):
         random_genome1 = random.choice(list(self.members.values()))
         random_genome2 = random.choice(list(self.members.values()))
+        random_genome1.getCellBody().ChangeCellColor((255,255,255))
+        random_genome2.getCellBody().ChangeCellColor((255,255,255))
+
         if random_genome1.getFitness() > random_genome2.getFitness():
             offspring = random_genome1.mate(random_genome2)
-            offspring.set_cell_body(random_genome1.getCellBody())
         else:
             offspring = random_genome2.mate(random_genome1)
-            offspring.set_cell_body(random_genome2.getCellBody())
 
         offspring.mutate()
-        offspring.set_species(self)
+
+
         return offspring
 
     def calculate_average_fitness(self):
         total_fitness = 0
-        genome_idx = 1
-        for idx in range(len(self.members)):
-            if genome_idx not in self.members:
-                genome_idx += 1
+        for genome in list(self.members.values()):
+            if not genome.getCellBody().isAlive:
                 continue
-            genome = self.members[genome_idx]
             total_fitness += genome.getFitness()
 
-        self.average_fitness = total_fitness / len(self.members)
+        try:
+            self.average_fitness = total_fitness / len(self.members)
+        except ZeroDivisionError:
+            self.average_fitness = 0
 
     def get_compatibility_distance(self, genome):
         genome_innovation_number_idx = 0
@@ -101,6 +104,9 @@ class Species:
 
     def get_members(self):
         return self.members
+
+    def remove_member(self, genome):
+        del self.members[genome.ID]
 
     def add_member(self, genome):
         self.members[genome.ID] = genome

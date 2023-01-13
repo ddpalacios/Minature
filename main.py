@@ -8,8 +8,8 @@ from Cell import Cell
 from Energy import Energy
 from NEAT.NEAT import NEAT
 sql = SQLLite()
-WindowWidth = 1600
-WindowHeight = 1000
+WindowWidth = 600
+WindowHeight = 500
 TotalPopulation = 10
 TotalEnergyBlocks = TotalPopulation // 2
 ActiveCellColor = (0, 0, 255)
@@ -20,7 +20,7 @@ PixelSize = 30
 screen = pg.display.set_mode((WindowWidth, WindowHeight))
 pg.display.set_caption("Miniature")
 clock = pg.time.Clock()
-FramesPerSecond = 90
+FramesPerSecond = 10
 total_population = 50
 environment = Environment(env_width=WindowWidth,
                           env_height=WindowHeight,
@@ -74,11 +74,11 @@ def check_events():
                 Energy(environment, pos[0], pos[1], EnergyCellColor)
 
             if event.key == pg.K_LEFT:
-                environment.frames_per_second -= 10
+                environment.frames_per_second -= 1
                 print(environment.frames_per_second)
 
             if event.key == pg.K_RIGHT:
-                environment.frames_per_second += 10
+                environment.frames_per_second += 1
                 print(environment.frames_per_second)
 
             if event.key == pg.K_UP:
@@ -109,34 +109,44 @@ def draw_grid():
         pg.draw.line(screen, GridColor, (0, y), (WindowWidth, y))
 
 
-def update():
-    for genome_idx, active_cell in enumerate(environment.active_cell_entities):
-        if genome_idx + 1 not in neat_environment.list_of_Genomes:
-            continue
+def update(ticks):
+    max_ticks_until_update = 5
+    # for genome_idx, active_cell in enumerate(environment.active_cell_entities):
+    for active_cell in environment.active_cell_entities:
+        active_cell.ChangeCellColor(ActiveCellColor)
         genome = active_cell.getGenome()
         vision_inputs = active_cell.scan()
         output = genome.forward(vision_inputs)
-        if output == 0:
-            active_cell.move_randomly()
-        elif output == 1:
+
+        if output == 1:
             active_cell.move_up()
+            print(genome.ID,"up")
+
         elif output == 2:
             active_cell.move_down()
+            print(genome.ID,"down")
         elif output == 3:
             active_cell.move_left()
+            print(genome.ID,"left")
+
         elif output == 4:
+            print(genome.ID,"right")
             active_cell.move_right()
+        else:
+            print(genome.ID,"random")
+            active_cell.move_randomly()
         active_cell.TotalTimeAliveInTicks += 1
 
-    if len(neat_environment.list_of_Genomes) > 1:
-        environment.neat_environment.evolve()
+
+    # if len(neat_environment.list_of_Genomes) > 1:
+    #     environment.neat_environment.evolve()
+    neat_environment.evolve(max_ticks_until_update)
     screen.fill(BackgroundColor)
     draw_grid()
     environment.active_cell_entities.update()
     environment.active_cell_entities.draw(screen)
     environment.energy_cell_entities.update()
     environment.energy_cell_entities.draw(screen)
-
     pg.display.update()
 
 
@@ -145,17 +155,21 @@ def generate_population(total_population=10):
         random_grid_position = environment.get_random_position()
         if random_grid_position is None:
             break
-        Cell(environment, random_grid_position[0], random_grid_position[1], ActiveCellColor)
+        active_cell = Cell(environment, random_grid_position[0], random_grid_position[1], ActiveCellColor)
+        genome = environment.neat_environment.generate_empty_genome()
+        active_cell.set_genome(genome)
 
 
 def start():
     if not environment.IsRunning():
         environment.start()
-    # generate_population(total_population=total_population)
+    generate_population(total_population=8)
+    ticks = 0
     while environment.IsRunning():
         check_events()
-        update()
+        update(ticks)
         clock.tick(environment.frames_per_second)
+        ticks+=1
     environment.terminate()
     return environment
 
@@ -164,11 +178,9 @@ if __name__ == '__main__':
     # sql.create_miniature_environment_tables()
     # print("Environment #", environment.id, "Was made")
     # print("there are", get_total_environments(), 'Environment(s) Available')
-
     neat_environment = NEAT(
         total_input_nodes=24,
         total_output_nodes=5,
         include_bias=True)
-
     environment.set_neat_environment(neat_environment)
     start()

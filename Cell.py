@@ -1,12 +1,13 @@
 import datetime
 import pygame as pg
+
 pg.init()
 from SQlite import SQLLite
 import random
 
 
 class Cell(pg.sprite.Sprite):
-    def __init__(self, environment, xpos, ypos, cell_color=(255, 0, 0)):
+    def __init__(self, environment, xpos, ypos, cell_color=(0, 0, 255)):
         self.sql_db = SQLLite()
         self.environment = environment
         pg.sprite.Sprite.__init__(self, environment.active_cell_entities)
@@ -20,7 +21,7 @@ class Cell(pg.sprite.Sprite):
         self.SpeciesID = "null"
         self.AdjustedFitness = 0
         self.fitness = 0
-        self.isAlive = 1
+        self.isAlive = True
         self.TotalTimeAliveInTicks = 0
         self.TotalEnergyRemaining = 0
         self.TotalEnergyObtained = 0
@@ -34,13 +35,16 @@ class Cell(pg.sprite.Sprite):
         self.GenerationNumber = 0
         self.TotalNodes = 0
         self.TotalConnections = 0
-        self.create_new_cell_record()
-        self.id = self.sql_db.execute_query("SELECT MAX(id) FROM {} ".format(self.entity_name)).fetchone()[0]
+        # self.create_new_cell_record()
+        # self.id = self.sql_db.execute_query("SELECT MAX(id) FROM {} ".format(self.entity_name)).fetchone()[0]
         self.rect.x = self.PosX
         self.rect.y = self.PosY
-        self.sql_db.execute_query(
-            "UPDATE {1} SET EnvID = {0} WHERE id = {2}".format(self.EnvID, self.entity_name, self.id))
+        # self.sql_db.execute_query(
+        #     "UPDATE {1} SET EnvID = {0} WHERE id = {2}".format(self.EnvID, self.entity_name, self.id))
         self.environment.add_active_cell()
+
+    def ChangeCellColor(self, rgb):
+        self.image.fill(rgb)
 
     def getGenome(self):
         return self.genome
@@ -58,8 +62,13 @@ class Cell(pg.sprite.Sprite):
 
     def hit_energy(self, new_x, new_y):
         if (new_x, new_y) in self.environment.energy_cell_dicts:
+            self.fitness += 100
             return True
         else:
+            if self.fitness-10 > 0:
+                self.fitness -= 10
+            else:
+                self.fitness = 0
             return False
 
     def hit_active_cell(self, new_x, new_y):
@@ -82,9 +91,9 @@ class Cell(pg.sprite.Sprite):
                     energy_cell = self.environment.energy_cell_dicts[self.PosX, self.PosY]
                     energy_cell.update_position(random_grid_position[0], random_grid_position[1])
 
-        self.sql_db.execute_query(
-            "UPDATE {} SET UpdateDateTime = {} WHERE id = {}".format(self.entity_name,
-                                                                     self.environment.currentDateTime, self.id))
+        # self.sql_db.execute_query(
+        #     "UPDATE {} SET UpdateDateTime = {} WHERE id = {}".format(self.entity_name,
+        #                                                              self.environment.currentDateTime, self.id))
 
     def move_randomly(self):
         rand = random.randint(0, 5)
@@ -115,34 +124,34 @@ class Cell(pg.sprite.Sprite):
         new_y = self.PosY - self.environment.pixelSize
         self.update_position(self.PosX, new_y)
 
-    def create_new_cell_record(self):
-        cursor = self.sql_db.execute_query('SELECT * FROM {}'.format(self.entity_name))
-        column_names = list(map(lambda x: x[0], cursor.description))
-        column_names.remove("id")
-        column_names = ",".join(column_names)
-        query = '''INSERT INTO {0} ({1}) VALUES ({2},{3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19});
-                        '''.format(
-            self.entity_name,  # 0
-            column_names,  # 1
-            self.EnvID,  # 2
-            self.AdjustedFitness,  # 3
-            self.fitness,  # 4
-            self.isAlive,  # 5
-            self.TotalTimeAliveInTicks,  # 6
-            self.TotalEnergyRemaining,  # 7
-            self.TotalEnergyObtained,  # 8
-            self.PosX,  # 9
-            self.PosY,  # 10
-            self.DirX,  # 11
-            self.DirY,  # 12
-            self.UpdateDateTime,  # 13
-            self.CreateDateTime,  # 14
-            self.EndDateTime,  # 15
-            self.GenerationNumber,  # 16
-            self.TotalNodes,  # 17
-            self.TotalConnections,  # 18
-            self.SpeciesID)  # 19
-        self.sql_db.execute_query(query)
+    # def create_new_cell_record(self):
+    #     cursor = self.sql_db.execute_query('SELECT * FROM {}'.format(self.entity_name))
+    #     column_names = list(map(lambda x: x[0], cursor.description))
+    #     column_names.remove("id")
+    #     column_names = ",".join(column_names)
+    #     query = '''INSERT INTO {0} ({1}) VALUES ({2},{3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19});
+    #                     '''.format(
+    #         self.entity_name,  # 0
+    #         column_names,  # 1
+    #         self.EnvID,  # 2
+    #         self.AdjustedFitness,  # 3
+    #         self.fitness,  # 4
+    #         self.isAlive,  # 5
+    #         self.TotalTimeAliveInTicks,  # 6
+    #         self.TotalEnergyRemaining,  # 7
+    #         self.TotalEnergyObtained,  # 8
+    #         self.PosX,  # 9
+    #         self.PosY,  # 10
+    #         self.DirX,  # 11
+    #         self.DirY,  # 12
+    #         self.UpdateDateTime,  # 13
+    #         self.CreateDateTime,  # 14
+    #         self.EndDateTime,  # 15
+    #         self.GenerationNumber,  # 16
+    #         self.TotalNodes,  # 17
+    #         self.TotalConnections,  # 18
+    #         self.SpeciesID)  # 19
+    #     self.sql_db.execute_query(query)
 
     def scan(self):
         """

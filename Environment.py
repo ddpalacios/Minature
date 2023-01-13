@@ -37,6 +37,7 @@ class Environment:
 
     def set_neat_environment(self, neat):
         self.neat_environment = neat
+        neat.set_environment(self)
 
     def get_neat_environment(self):
         return self.neat_environment

@@ -1,10 +1,14 @@
 import operator
 import random
 import numpy as np
+
+from Cell import Cell
 from NEAT.Node import Node
 from NEAT.Genome import Genome
 from NEAT.ConnectionGene import ConnectionGene
 from NEAT.Species import Species
+
+from time import sleep
 
 
 class NEAT:
@@ -51,18 +55,18 @@ class NEAT:
     def set_environment(self, env):
         self.Environment = env
 
-    def __sort_species(self):
+    def sort_species(self):
         sorted_species = {}
         for species in (sorted(self.list_of_Species.values(), key=operator.attrgetter('average_fitness'))):
             sorted_species[species.ID] = species
         self.list_of_Species = sorted_species
         return self.list_of_Species
 
-    def __reassign_species(self):
+    def reassign_species(self):
         for genome in list(self.list_of_Genomes.values()):
             genome.set_species(None)
-
             found_species = False
+
             for species in list(self.list_of_Species.values()):
                 if species.is_compatible(genome=genome):
                     found_species = True
@@ -70,12 +74,10 @@ class NEAT:
                     genome.set_species(species)
                     break
             if not found_species:
-                new_species = self.__generate_new_species(genome=genome)
+                new_species = self.generate_new_species(genome=genome)
                 self.list_of_Species[new_species.ID] = new_species
 
-        print('done')
-
-    def __generate_new_species(self, genome):
+    def generate_new_species(self, genome):
         species = Species(ID=len(self.list_of_Species) + 1, neat_environment=self)
         genome.set_species(species)
         species.set_representative(genome)
@@ -98,24 +100,27 @@ class NEAT:
             self.list_of_Connection_Genes = sorted_genes
             return connection_gene
 
-    def remove_worst_genome(self):
+    def remove_worst_genome(self, maxTicks):
         sorted_genomes = {}
         senior_genomes = {}
         sorted_senior_genomes = {}
         worst_genome = None
         for genome in (sorted(self.list_of_Genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
             sorted_genomes[genome.ID] = genome
-            if genome.getCellBody().TotalTimeAliveInTicks >= 100:
-                senior_genomes[genome.ID] = genome.getCellBody()
+            if genome.getCellBody().TotalTimeAliveInTicks >= maxTicks:
+                senior_genomes[genome.ID] = genome
         self.list_of_Genomes = sorted_genomes
 
         if len(senior_genomes) > 0:
-            for cell in (sorted(senior_genomes.values(), key=operator.attrgetter('TotalTimeAliveInTicks'))):
-                genome = cell.getGenome()
+            for genome in (sorted(senior_genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
                 sorted_senior_genomes[genome.ID] = genome
-
             worst_genome = list(sorted_senior_genomes.values())[0]
-            # del self.list_of_Genomes[worst_genome.ID]
+
+            worst_genome.getCellBody().isAlive = False
+            del self.Environment.active_cell_dicts[worst_genome.getCellBody().PosX, worst_genome.getCellBody().PosY]
+            worst_genome.getSpecies().remove_member(worst_genome)
+            del self.list_of_Genomes[worst_genome.ID]
+            worst_genome.getCellBody().kill()
 
         return worst_genome
 
@@ -142,61 +147,46 @@ class NEAT:
             node_id += 1
 
     def generate_empty_genome(self):
+        attempts = 100
         genome_id = len(self.list_of_Genomes) + 1
-        initial_species = Species(ID=1, neat_environment=self)
-
+        for attempt in range(attempts):
+            if genome_id not in self.list_of_Genomes:
+                break
+            else:
+                genome_id += 1
         new_genome = Genome(neat_environment=self, ID=genome_id)
-        new_genome.set_species(initial_species)
-
         for n_id in range(self.total_nodes):
-
             new_node = self.get_node(node_id=n_id + 1)
             new_genome.Node_Genes[new_node.ID] = new_node
             if n_id + 1 > self.total_sensor_nodes:
                 new_genome.output_nodes[n_id + 1] = new_node
         self.list_of_Genomes[genome_id] = new_genome
-
-        if initial_species.getRepresentative() is None:
-            initial_species.set_representative(new_genome)
-            self.list_of_Species[initial_species.ID] = initial_species
+        # print("new genome created", "Total Genomes", len(self.list_of_Genomes))
 
         return new_genome
 
-    # def __generate_base_genomes(self):
-    #     genome_id = 0
-    #     initial_species = Species(ID=1, neat_environment=self)
-    #     for g_id in range(self.total_population):
-    #         new_genome = Genome(neat_environment=self, ID=genome_id)
-    #         new_genome.set_species(initial_species)
-    #
-    #         for n_id in range(self.total_nodes):
-    #             new_node = self.get_node(node_id=n_id + 1)
-    #             new_genome.Node_Genes[new_node.ID] = new_node
-    #             if n_id + 1 > self.total_sensor_nodes:
-    #                 new_genome.output_nodes[n_id + 1] = new_node
-    #         self.list_of_Genomes[genome_id] = new_genome
-    #
-    #         genome_id += 1
-    #     random_genome = random.choice(list(initial_species.get_members().values()))
-    #     initial_species.set_representative(random_genome)
-    #     self.list_of_Species[initial_species.ID] = initial_species
-
     def initialize(self):
         self.__generate_base_nodes()
-        # self.__generate_base_genomes()
 
-    def evolve(self):
+    def evolve(self, max_ticks_until_update):
         for genome in list(self.list_of_Genomes.values()):
             genome.calculate_adjusted_fitness()
-        worst_genome = self.remove_worst_genome()
+
+        worst_genome = self.remove_worst_genome(max_ticks_until_update)
+
         for species in list(self.list_of_Species.values()):
             species.calculate_average_fitness()
-            self.__sort_species()
-            if worst_genome is not None :
-                species_for_breeding = random.choice(list(self.list_of_Species.values()))
-                offspring = species_for_breeding.breed()
-                del self.list_of_Genomes[worst_genome.ID]
-                self.__reassign_species()
+        self.sort_species()
+
+        if len(self.list_of_Species) > 0 and worst_genome is not None:
+            species_for_breeding = random.choice(list(self.list_of_Species.values()))
+            offspring = species_for_breeding.breed()
+            active_cell = Cell(self.Environment, worst_genome.getCellBody().PosX, worst_genome.getCellBody().PosY)
+            offspring.set_cell_body(active_cell)
+            active_cell.set_genome(offspring)
+            offspring.getCellBody().ChangeCellColor((0, 255, 255))
+
+        self.reassign_species()
 
 
 if __name__ == '__main__':
