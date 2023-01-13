@@ -43,7 +43,6 @@ class Genome:
     def set_cell_body(self, cell):
         self.CellBody = cell
 
-
     def getCellBody(self):
         return self.CellBody
 
@@ -98,11 +97,20 @@ class Genome:
     def getSpecies(self):
         return self.Species
 
+    def calculateFitness(self):
+        total_energy_obtained = self.getCellBody().TotalEnergyObtained
+        total_steps_taken = self.getCellBody().TotalStepsTaken
+        energy_remaining = self.getCellBody().TotalEnergyRemaining + total_energy_obtained - total_steps_taken
+        self.fitness_score += total_energy_obtained - total_steps_taken
+        self.getCellBody().TotalEnergyRemaining = energy_remaining
+        if self.fitness_score < 0:
+            self.fitness_score = 0
+        elif self.fitness_score > 100:
+            self.fitness_score = 100
+
+
     def getFitness(self):
         return self.fitness_score
-
-    def setFitness(self, fitness):
-        self.fitness_score = fitness
 
     def calculate_adjusted_fitness(self):
         if self.Species is not None:

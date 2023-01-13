@@ -20,7 +20,7 @@ PixelSize = 30
 screen = pg.display.set_mode((WindowWidth, WindowHeight))
 pg.display.set_caption("Miniature")
 clock = pg.time.Clock()
-FramesPerSecond = 10
+FramesPerSecond = 90
 total_population = 50
 environment = Environment(env_width=WindowWidth,
                           env_height=WindowHeight,
@@ -118,6 +118,7 @@ def update(ticks):
         vision_inputs = active_cell.scan()
         output = genome.forward(vision_inputs)
 
+
         if output == 1:
             active_cell.move_up()
             print(genome.ID,"up")
@@ -133,14 +134,15 @@ def update(ticks):
             print(genome.ID,"right")
             active_cell.move_right()
         else:
-            print(genome.ID,"random")
             active_cell.move_randomly()
+        genome.calculateFitness()
+        print(genome.getFitness())
         active_cell.TotalTimeAliveInTicks += 1
 
 
     # if len(neat_environment.list_of_Genomes) > 1:
     #     environment.neat_environment.evolve()
-    neat_environment.evolve(max_ticks_until_update)
+    # neat_environment.evolve(max_ticks_until_update)
     screen.fill(BackgroundColor)
     draw_grid()
     environment.active_cell_entities.update()
@@ -163,7 +165,7 @@ def generate_population(total_population=10):
 def start():
     if not environment.IsRunning():
         environment.start()
-    generate_population(total_population=8)
+    generate_population(total_population=1)
     ticks = 0
     while environment.IsRunning():
         check_events()

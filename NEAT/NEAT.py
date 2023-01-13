@@ -13,7 +13,7 @@ from time import sleep
 
 class NEAT:
     def __init__(self, environment=None, total_population=10, total_input_nodes=0, total_output_nodes=0,
-                 add_connection_probability=.3,
+                 add_connection_probability=.9,
                  add_node_probability=.2, include_bias=False,
                  species_threshold=3,
                  excess_coefficient=1,
@@ -176,9 +176,9 @@ class NEAT:
 
         for species in list(self.list_of_Species.values()):
             species.calculate_average_fitness()
-        self.sort_species()
 
         if len(self.list_of_Species) > 0 and worst_genome is not None:
+            self.sort_species()
             species_for_breeding = random.choice(list(self.list_of_Species.values()))
             offspring = species_for_breeding.breed()
             active_cell = Cell(self.Environment, worst_genome.getCellBody().PosX, worst_genome.getCellBody().PosY)

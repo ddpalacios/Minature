@@ -23,8 +23,9 @@ class Cell(pg.sprite.Sprite):
         self.fitness = 0
         self.isAlive = True
         self.TotalTimeAliveInTicks = 0
-        self.TotalEnergyRemaining = 0
+        self.TotalEnergyRemaining = 100
         self.TotalEnergyObtained = 0
+        self.TotalStepsTaken = 0
         self.PosX = xpos
         self.PosY = ypos
         self.DirX = 0
@@ -62,13 +63,10 @@ class Cell(pg.sprite.Sprite):
 
     def hit_energy(self, new_x, new_y):
         if (new_x, new_y) in self.environment.energy_cell_dicts:
-            self.fitness += 100
+            self.TotalEnergyObtained += 1
             return True
         else:
-            if self.fitness-10 > 0:
-                self.fitness -= 10
-            else:
-                self.fitness = 0
+            self.TotalStepsTaken += 1
             return False
 
     def hit_active_cell(self, new_x, new_y):
@@ -96,7 +94,7 @@ class Cell(pg.sprite.Sprite):
         #                                                              self.environment.currentDateTime, self.id))
 
     def move_randomly(self):
-        rand = random.randint(0, 5)
+        rand = random.randint(1, 4)
         if rand == 1:
             self.move_up()
         elif rand == 2:
