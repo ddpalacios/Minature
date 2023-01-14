@@ -2,11 +2,13 @@ import sys
 from Environment import Environment
 from SQlite import SQLLite
 import pygame as pg
+
 pg.init()
 
 from Cell import Cell
 from Energy import Energy
 from NEAT.NEAT import NEAT
+
 sql = SQLLite()
 WindowWidth = 600
 WindowHeight = 500
@@ -118,31 +120,23 @@ def update(ticks):
         vision_inputs = active_cell.scan()
         output = genome.forward(vision_inputs)
 
-
         if output == 1:
             active_cell.move_up()
-            print(genome.ID,"up")
-
         elif output == 2:
             active_cell.move_down()
-            print(genome.ID,"down")
         elif output == 3:
             active_cell.move_left()
-            print(genome.ID,"left")
-
         elif output == 4:
-            print(genome.ID,"right")
             active_cell.move_right()
         else:
             active_cell.move_randomly()
         genome.calculateFitness()
-        print(genome.getFitness())
+        # print(genome.getFitness())
         active_cell.TotalTimeAliveInTicks += 1
-
 
     # if len(neat_environment.list_of_Genomes) > 1:
     #     environment.neat_environment.evolve()
-    # neat_environment.evolve(max_ticks_until_update)
+    neat_environment.evolve(max_ticks_until_update)
     screen.fill(BackgroundColor)
     draw_grid()
     environment.active_cell_entities.update()
@@ -165,13 +159,13 @@ def generate_population(total_population=10):
 def start():
     if not environment.IsRunning():
         environment.start()
-    generate_population(total_population=1)
+    generate_population(total_population=3)
     ticks = 0
     while environment.IsRunning():
         check_events()
         update(ticks)
         clock.tick(environment.frames_per_second)
-        ticks+=1
+        ticks += 1
     environment.terminate()
     return environment
 
@@ -181,8 +175,8 @@ if __name__ == '__main__':
     # print("Environment #", environment.id, "Was made")
     # print("there are", get_total_environments(), 'Environment(s) Available')
     neat_environment = NEAT(
-        total_input_nodes=24,
-        total_output_nodes=5,
+        total_input_nodes=3,
+        total_output_nodes=2,
         include_bias=True)
     environment.set_neat_environment(neat_environment)
     start()

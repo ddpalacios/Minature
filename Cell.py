@@ -63,7 +63,7 @@ class Cell(pg.sprite.Sprite):
 
     def hit_energy(self, new_x, new_y):
         if (new_x, new_y) in self.environment.energy_cell_dicts:
-            self.TotalEnergyObtained += 1
+            self.TotalEnergyObtained += 100
             return True
         else:
             self.TotalStepsTaken += 1
@@ -156,10 +156,13 @@ class Cell(pg.sprite.Sprite):
         :return: 24 inputs for all 8 directions
         """
         vision_inputs = []  # 24 input values
-        directions = [(1, 0), (1, -1), (1, 1), (-1, 0), (-1, -1), (-1, 1), (0, -1), (0, 1)]  # tuple of all 8 directions
+        directions = [(1, 0)]#, (1, -1), (1, 1) ]#, (-1, 0), (-1, -1), (-1, 1), (0, -1), (0, 1)]  # tuple of all 8 directions
         for dir in directions:  # iterate through all 8 directions
             vision_values = self.look(dir)  # list of 3 values returned of entity position statuses
             vision_inputs.extend(vision_values)  # Extend 3 values to input values
+
+        if self.environment.neat_environment.include_bias:
+            vision_inputs.insert(0, 1)
 
         return vision_inputs  # all 24 inputs for all 8 direction (8*3)
 

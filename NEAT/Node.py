@@ -6,7 +6,7 @@ def sigmoid(z):
 
 
 class Node:
-    def __init__(self,neat_environment, ID, node_type=None):
+    def __init__(self, neat_environment, ID, node_type=None):
         self.neat_environment = neat_environment
         self.ID = ID
         self.NodeType = node_type
@@ -23,14 +23,32 @@ class Node:
         sorted_genes = self.neat_environment.sort_connection_genes(self.Connection_Genes)
         self.Connection_Genes = sorted_genes
 
-    def calculate(self):
+    def calculate(self, connection_gene=None):
         z = 0.0
+
+        if connection_gene is not None:
+            if not connection_gene.is_expressed:
+                return sigmoid(z)
+            in_node = self.neat_environment.list_of_Nodes[connection_gene.in_node]
+            out_node = self.neat_environment.list_of_Nodes[connection_gene.out_node]
+            in_node_input = in_node.getInput()
+            if in_node_input is not None:
+                output = in_node_input * connection_gene.weight
+                z += output
+                self.set_input(sigmoid(z))
+                return self.input
+
         for connection_gene in list(self.Connection_Genes.values()):
-            if connection_gene is not connection_gene.is_expressed:
+            if not connection_gene.is_expressed:
                 continue
-            in_node_input = connection_gene.in_node.getInput()
-            z += in_node_input * connection_gene.weight
-        self.input = sigmoid(z)
+            in_node = self.neat_environment.list_of_Nodes[connection_gene.in_node]
+            out_node = self.neat_environment.list_of_Nodes[connection_gene.out_node]
+
+            in_node_input = in_node.getInput()
+            if in_node_input is not None:
+                output = in_node_input * connection_gene.weight
+                z += output
+        self.set_input(sigmoid(z))
         return self.input
 
     def set_input(self, input):
@@ -38,7 +56,6 @@ class Node:
 
     def getInput(self):
         return self.input
-
 
 # import numpy as np
 #
