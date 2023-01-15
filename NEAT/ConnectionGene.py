@@ -32,3 +32,6 @@ class ConnectionGene:
     def setGenome(self, genome):
         self.Genome = genome
 
+    def getGenome(self):
+        return self.Genome
+

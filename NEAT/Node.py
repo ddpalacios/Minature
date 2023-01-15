@@ -23,31 +23,24 @@ class Node:
         sorted_genes = self.neat_environment.sort_connection_genes(self.Connection_Genes)
         self.Connection_Genes = sorted_genes
 
-    def calculate(self, connection_gene=None):
+    def calculate(self):
         z = 0.0
-
-        if connection_gene is not None:
-            if not connection_gene.is_expressed:
-                return sigmoid(z)
-            in_node = self.neat_environment.list_of_Nodes[connection_gene.in_node]
-            out_node = self.neat_environment.list_of_Nodes[connection_gene.out_node]
-            in_node_input = in_node.getInput()
-            if in_node_input is not None:
-                output = in_node_input * connection_gene.weight
-                z += output
-                self.set_input(sigmoid(z))
-                return self.input
 
         for connection_gene in list(self.Connection_Genes.values()):
             if not connection_gene.is_expressed:
                 continue
-            in_node = self.neat_environment.list_of_Nodes[connection_gene.in_node]
-            out_node = self.neat_environment.list_of_Nodes[connection_gene.out_node]
+            in_node = connection_gene.getGenome().Node_Genes[connection_gene.in_node]  #self.neat_environment.list_of_Nodes[connection_gene.in_node]
+            out_node = connection_gene.getGenome().Node_Genes[connection_gene.in_node]  #self.neat_environment.list_of_Nodes[connection_gene.in_node]
 
             in_node_input = in_node.getInput()
-            if in_node_input is not None:
-                output = in_node_input * connection_gene.weight
-                z += output
+            if in_node_input is None:
+                for conn in list(connection_gene.getGenome().Connection_Genes.values()):
+                    in_node = conn.in_node
+                    out_node = conn.out_node
+                    # print("(", in_node, '=>', out_node,")")
+
+            output = in_node_input * connection_gene.weight
+            z += output
         self.set_input(sigmoid(z))
         return self.input
 

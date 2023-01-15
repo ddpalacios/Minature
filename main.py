@@ -112,7 +112,7 @@ def draw_grid():
 
 
 def update(ticks):
-    max_ticks_until_update = 5
+    max_ticks_until_update = 500
     # for genome_idx, active_cell in enumerate(environment.active_cell_entities):
     for active_cell in environment.active_cell_entities:
         active_cell.ChangeCellColor(ActiveCellColor)
@@ -122,14 +122,22 @@ def update(ticks):
 
         if output == 1:
             active_cell.move_up()
+            # print('up')
         elif output == 2:
             active_cell.move_down()
+            # print('down')
+
         elif output == 3:
             active_cell.move_left()
+            # print('left')
+
         elif output == 4:
+            # print('right')
+
             active_cell.move_right()
         else:
             active_cell.move_randomly()
+            print('random')
         genome.calculateFitness()
         # print(genome.getFitness())
         active_cell.TotalTimeAliveInTicks += 1
@@ -175,8 +183,8 @@ if __name__ == '__main__':
     # print("Environment #", environment.id, "Was made")
     # print("there are", get_total_environments(), 'Environment(s) Available')
     neat_environment = NEAT(
-        total_input_nodes=3,
-        total_output_nodes=2,
+        total_input_nodes=24,
+        total_output_nodes=5,
         include_bias=True)
     environment.set_neat_environment(neat_environment)
     start()

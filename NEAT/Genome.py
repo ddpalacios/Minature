@@ -26,8 +26,8 @@ import operator
 import random
 import numpy as np
 
-from ConnectionGene import ConnectionGene
-from Node import Node
+from NEAT.ConnectionGene import ConnectionGene
+from NEAT.Node import Node
 
 
 class Genome:
@@ -52,31 +52,20 @@ class Genome:
 
     def forward(self, inputs):
 
-        for node_idx in range(len(inputs)):
-            sensor_node = self.Node_Genes[node_idx + 1]
+        for node_idx, sensor_node in enumerate(list(self.sensor_nodes.values())):
             if sensor_node.NodeType_Code == .1:
                 sensor_node.set_input(inputs[node_idx])
 
         for hidden_node in list(self.hidden_nodes.values()):
             hidden_node.calculate()
 
-        #
-        # input_probability = []
-        # for connection_gene in list(self.Connection_Genes):
-        #     out_node = connection_gene.out_node
-        #     input_value = out_node.calculate(connection_gene)
-        #     input_probability.append(input_value)
-        #
-        # # for output_node in list(self.output_nodes.values()):
-        # #     input_value = output_node.calculate()
-        # #     input_probability.append(input_value)
-        #
-        # output = input_probability.index(max(input_probability))
-        # return output
+        output_probability = []
+        for output_node in list(self.output_nodes.values()):
+            input_value = output_node.calculate()
+            output_probability.append(input_value)
 
-        # for node_idx in range(len(self.output_nodes)):
-        #     output_node = self.output_nodes[node_idx + 1]
-        #     output_node.calculate()
+        output = output_probability.index(max(output_probability))
+        return output
 
         # for hidden_node_idx in range(len(inputs), len(self.Node_Genes) + self.neat_environment.total_output_nodes):
         #     node = self.Node_Genes[hidden_node_idx + 1]
@@ -90,7 +79,6 @@ class Genome:
         #         output = output_node.calculate()
         #         output_probability.append(output)
         #
-        # output = output_probability.index(max(output_probability))
         # return output
 
     def mutate(self):
@@ -116,32 +104,40 @@ class Genome:
     def add_node(self):
         if len(self.Connection_Genes) == 0:
             return
-        random_connection = random.choice(list(self.Connection_Genes.values()))
-        random_connection.is_expressed = False
+        for attempt in range(100):
 
-        new_node = self.neat_environment.get_node(len(self.Node_Genes) + 1)
-        new_node.NodeType = 'hidden'
-        new_node = self.add_node_to_phenotype(new_node)
+            random_connection = random.choice(list(self.Connection_Genes.values()))
+            random_connection.is_expressed = False
 
-        in_node = self.Node_Genes[random_connection.in_node]
-        out_node = self.Node_Genes[random_connection.out_node]
+            new_node = self.neat_environment.get_node(len(self.Node_Genes) + 1)
+            if random_connection.in_node == new_node.ID or random_connection.out_node == new_node.ID:
+                continue
+            new_node.NodeType = 'hidden'
+            new_node = self.add_node_to_phenotype(new_node)
 
-        new_node.NodeType_Code = (in_node.NodeType_Code + out_node.NodeType_Code) / 2
+            in_node = self.Node_Genes[random_connection.in_node]
+            out_node = self.Node_Genes[random_connection.out_node]
 
-        new_connection1 = self.neat_environment.get_connection(in_node.ID, new_node.ID)
-        new_connection2 = self.neat_environment.get_connection(new_node.ID, out_node.ID)
-        new_connection1 = self.add_connection_to_phenotype(new_connection1)
-        new_connection2 = self.add_connection_to_phenotype(new_connection2)
-        new_connection1.setWeight(1)
-        new_connection2.setWeight(random_connection.getWeight())
+            new_node.NodeType_Code = (in_node.NodeType_Code + out_node.NodeType_Code) / 2
 
-        new_node.add_connection_gene(new_connection1)
-        new_node.add_connection_gene(new_connection2)
-        in_node.add_connection_gene(new_connection1)
-        out_node.add_connection_gene(new_connection2)
+            print('nodes to connect', in_node.ID , '=>', new_node.ID,'=>',out_node.ID)
 
+            new_connection1 = self.neat_environment.get_connection(in_node.ID, new_node.ID)
+            print('conn1',new_connection1.in_node, '=>', new_connection1.out_node)
 
-        return new_node
+            new_connection2 = self.neat_environment.get_connection(new_node.ID, out_node.ID)
+            print('conn2', new_connection2.in_node, '=>', new_connection2.out_node)
+
+            new_connection1 = self.add_connection_to_phenotype(new_connection1)
+            new_connection2 = self.add_connection_to_phenotype(new_connection2)
+            new_connection1.setWeight(1)
+            new_connection2.setWeight(random_connection.getWeight())
+
+            new_node.add_connection_gene(new_connection1)
+            # in_node.add_connection_gene(new_connection1)
+            out_node.add_connection_gene(new_connection2)
+
+            return new_node
 
     def add_connection_to_phenotype(self, connection_gene):
         new_connection = ConnectionGene(innovation_number=connection_gene.ID,
@@ -163,6 +159,8 @@ class Genome:
             node2 = random.choice(list(self.Node_Genes.values()))
             if node1.NodeType_Code == node2.NodeType_Code:
                 continue
+            if node1.NodeType == 'hidden' and node2.NodeType == 'hidden':
+                continue
             if node1.NodeType_Code < node2.NodeType_Code:
                 new_connection = self.neat_environment.get_connection(in_node=node1.ID, out_node=node2.ID)
             else:
@@ -171,8 +169,9 @@ class Genome:
             if (new_connection.in_node, new_connection.out_node) in self.Connection_Genes:
                 continue
             else:
+                # print(node1.ID, '=>', node2.ID)
                 new_connection = self.add_connection_to_phenotype(new_connection)
-                node1.add_connection_gene(new_connection)
+                # node1.add_connection_gene(new_connection)
                 node2.add_connection_gene(new_connection)
                 return
 

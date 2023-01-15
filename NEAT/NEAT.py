@@ -3,10 +3,10 @@ import random
 import numpy as np
 
 from Cell import Cell
-from Node import Node
-from Genome import Genome
-from ConnectionGene import ConnectionGene
-from Species import Species
+from NEAT.Node import Node
+from NEAT.Genome import Genome
+from NEAT.ConnectionGene import ConnectionGene
+from NEAT.Species import Species
 
 
 class NEAT:
@@ -214,6 +214,8 @@ if __name__ == '__main__':
     genome = neat_environment.generate_empty_genome()
     genome.add_connection()
     genome.add_node()
+    genome.add_node()
+
     genome2 = neat_environment.generate_empty_genome()
     genome2.add_connection()
     genome2.add_connection()
