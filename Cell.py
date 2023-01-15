@@ -88,10 +88,17 @@ class Cell(pg.sprite.Sprite):
                 if random_grid_position is not None:
                     energy_cell = self.environment.energy_cell_dicts[self.PosX, self.PosY]
                     energy_cell.update_position(random_grid_position[0], random_grid_position[1])
+        else:
+            if self.hit_wall(new_x, new_y):
+                if self.PosX - self.environment.pixelSize < 0:
+                    self.update_position(self.environment.env_width - self.environment.pixelSize, self.PosY)
+                elif self.PosX + self.environment.pixelSize > self.environment.env_width-self.environment.pixelSize:
+                    self.update_position(0, self.PosY)
 
-        # self.sql_db.execute_query(
-        #     "UPDATE {} SET UpdateDateTime = {} WHERE id = {}".format(self.entity_name,
-        #                                                              self.environment.currentDateTime, self.id))
+                if self.PosY - self.environment.pixelSize < 0:
+                    self.update_position(self.PosX, self.environment.env_height - self.environment.pixelSize)
+                elif self.PosY + self.environment.pixelSize > self.environment.env_height-self.environment.pixelSize:
+                    self.update_position(self.PosX, 0)
 
     def move_randomly(self):
         rand = random.randint(1, 4)
@@ -156,7 +163,7 @@ class Cell(pg.sprite.Sprite):
         :return: 24 inputs for all 8 directions
         """
         vision_inputs = []  # 24 input values
-        directions = [(1, 0),(1, -1), (1, 1) , (-1, 0), (-1, -1), (-1, 1), (0, -1), (0, 1)]  # tuple of all 8 directions
+        directions = [(1, 0), (1, -1), (1, 1), (-1, 0), (-1, -1), (-1, 1), (0, -1), (0, 1)]  # tuple of all 8 directions
         for dir in directions:  # iterate through all 8 directions
             vision_values = self.look(dir)  # list of 3 values returned of entity position statuses
             vision_inputs.extend(vision_values)  # Extend 3 values to input values

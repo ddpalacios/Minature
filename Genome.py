@@ -22,12 +22,11 @@
 
 
     """
-import operator
 import random
 import numpy as np
 
-from NEAT.ConnectionGene import ConnectionGene
-from NEAT.Node import Node
+from ConnectionGene import ConnectionGene
+from Node import Node
 
 
 class Genome:
@@ -120,13 +119,13 @@ class Genome:
 
             new_node.NodeType_Code = (in_node.NodeType_Code + out_node.NodeType_Code) / 2
 
-            print('nodes to connect', in_node.ID , '=>', new_node.ID,'=>',out_node.ID)
+            # print('nodes to connect', in_node.ID , '=>', new_node.ID,'=>',out_node.ID)
 
             new_connection1 = self.neat_environment.get_connection(in_node.ID, new_node.ID)
-            print('conn1',new_connection1.in_node, '=>', new_connection1.out_node)
+            # print('conn1',new_connection1.in_node, '=>', new_connection1.out_node)
 
             new_connection2 = self.neat_environment.get_connection(new_node.ID, out_node.ID)
-            print('conn2', new_connection2.in_node, '=>', new_connection2.out_node)
+            # print('conn2', new_connection2.in_node, '=>', new_connection2.out_node)
 
             new_connection1 = self.add_connection_to_phenotype(new_connection1)
             new_connection2 = self.add_connection_to_phenotype(new_connection2)
@@ -158,8 +157,6 @@ class Genome:
             node1 = random.choice(list(self.Node_Genes.values()))
             node2 = random.choice(list(self.Node_Genes.values()))
             if node1.NodeType_Code == node2.NodeType_Code:
-                continue
-            if node1.NodeType == 'hidden' and node2.NodeType == 'hidden':
                 continue
             if node1.NodeType_Code < node2.NodeType_Code:
                 new_connection = self.neat_environment.get_connection(in_node=node1.ID, out_node=node2.ID)
@@ -241,7 +238,7 @@ class Genome:
         total_energy_obtained = self.getCellBody().TotalEnergyObtained
         total_steps_taken = self.getCellBody().TotalStepsTaken
         energy_remaining = self.getCellBody().TotalEnergyRemaining + total_energy_obtained - total_steps_taken
-        self.fitness_score += (total_energy_obtained ** 2) - (total_steps_taken ** 2)
+        self.fitness_score += (total_energy_obtained ** 2) - (total_steps_taken)
         self.getCellBody().TotalEnergyRemaining = energy_remaining
         # if self.fitness_score < 0:
         #     self.fitness_score = 0

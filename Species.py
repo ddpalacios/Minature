@@ -12,20 +12,24 @@ class Species:
         self.average_fitness = 0.0
 
     def breed(self):
-        random_genome1 = random.choice(list(self.members.values()))
-        random_genome2 = random.choice(list(self.members.values()))
-        random_genome1.getCellBody().ChangeCellColor((255,255,255))
-        random_genome2.getCellBody().ChangeCellColor((255,255,255))
+        try:
 
-        if random_genome1.getFitness() > random_genome2.getFitness():
-            offspring = random_genome1.mate(random_genome2)
-        else:
-            offspring = random_genome2.mate(random_genome1)
+            random_genome1 = random.choice(list(self.members.values()))
+            random_genome2 = random.choice(list(self.members.values()))
+            random_genome1.getCellBody().ChangeCellColor((255,255,255))
+            random_genome2.getCellBody().ChangeCellColor((255,255,255))
 
-        offspring.mutate()
+            if random_genome1.getFitness() > random_genome2.getFitness():
+                offspring = random_genome1.mate(random_genome2)
+            else:
+                offspring = random_genome2.mate(random_genome1)
 
+            offspring.mutate()
 
-        return offspring
+            return offspring
+
+        except IndexError:
+            return
 
     def calculate_average_fitness(self):
         total_fitness = 0

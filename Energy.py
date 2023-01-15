@@ -21,13 +21,13 @@ class Energy(pygame.sprite.Sprite):
         self.CreateDateTime = datetime.datetime.timestamp(datetime.datetime.now()) * 1000
         self.EndDateTime = "null"
         self.DurationInSec = 0
-        self.create_new_cell_record()
-        self.id = self.sql_db.execute_query("SELECT MAX(id) FROM {} ".format(self.entity_name)).fetchone()[0]
+        # self.create_new_cell_record()
+        # self.id = self.sql_db.execute_query("SELECT MAX(id) FROM {} ".format(self.entity_name)).fetchone()[0]
         self.rect.x = self.PosX
         self.rect.y = self.PosY
 
-        self.sql_db.execute_query(
-            "UPDATE {1} SET EnvID = {0} WHERE id = {2}".format(self.EnvID, self.entity_name, self.id))
+        # self.sql_db.execute_query(
+        #     "UPDATE {1} SET EnvID = {0} WHERE id = {2}".format(self.EnvID, self.entity_name, self.id))
         self.environment.add_energy_cell()
 
     def update_position(self, new_x, new_y):

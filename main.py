@@ -7,28 +7,25 @@ pg.init()
 
 from Cell import Cell
 from Energy import Energy
-from NEAT.NEAT import NEAT
+from NEAT import NEAT
 
 sql = SQLLite()
-WindowWidth = 600
-WindowHeight = 500
-TotalPopulation = 10
-TotalEnergyBlocks = TotalPopulation // 2
+WindowWidth = 1500
+WindowHeight = 900
+TotalPopulation = 0
+TotalEnergyBlocks = 0
 ActiveCellColor = (0, 0, 255)
 BackgroundColor = (0, 0, 0)
 EnergyCellColor = (255, 0, 0)
 GridColor = (60, 60, 60)
-PixelSize = 30
+PixelSize = 10
 screen = pg.display.set_mode((WindowWidth, WindowHeight))
 pg.display.set_caption("Miniature")
 clock = pg.time.Clock()
 FramesPerSecond = 90
-total_population = 50
 environment = Environment(env_width=WindowWidth,
                           env_height=WindowHeight,
                           frames_per_second=FramesPerSecond,
-                          total_population=TotalPopulation,
-                          total_energy_blocks=TotalEnergyBlocks,
                           pixel_size=PixelSize)
 
 
@@ -58,11 +55,13 @@ def get_mouse_position():
 
 
 def check_events():
+
     for event in pg.event.get():
         if event.type == pg.QUIT:
             sys.exit()
 
         if event.type == pg.KEYDOWN:
+
 
             if event.key == pg.K_SPACE:
                 environment.clear()
@@ -82,6 +81,7 @@ def check_events():
             if event.key == pg.K_RIGHT:
                 environment.frames_per_second += 1
                 print(environment.frames_per_second)
+
 
             if event.key == pg.K_UP:
                 environment.pixelSize += 10
@@ -112,9 +112,9 @@ def draw_grid():
 
 
 def update(ticks):
-    max_ticks_until_update = 500
-    # for genome_idx, active_cell in enumerate(environment.active_cell_entities):
+    max_ticks_until_update = 100
     for active_cell in environment.active_cell_entities:
+
         active_cell.ChangeCellColor(ActiveCellColor)
         genome = active_cell.getGenome()
         vision_inputs = active_cell.scan()
@@ -122,28 +122,19 @@ def update(ticks):
 
         if output == 1:
             active_cell.move_up()
-            # print('up')
-        elif output == 2:
+        if output == 2:
             active_cell.move_down()
-            # print('down')
-
-        elif output == 3:
+        if output == 3:
             active_cell.move_left()
-            # print('left')
-
-        elif output == 4:
-            # print('right')
-
+        if output == 4:
             active_cell.move_right()
         else:
-            active_cell.move_randomly()
-            print('random')
+            genome.fitness_score = genome.fitness_score - 100
+
         genome.calculateFitness()
-        # print(genome.getFitness())
         active_cell.TotalTimeAliveInTicks += 1
 
-    # if len(neat_environment.list_of_Genomes) > 1:
-    #     environment.neat_environment.evolve()
+
     neat_environment.evolve(max_ticks_until_update)
     screen.fill(BackgroundColor)
     draw_grid()
@@ -160,14 +151,27 @@ def generate_population(total_population=10):
         if random_grid_position is None:
             break
         active_cell = Cell(environment, random_grid_position[0], random_grid_position[1], ActiveCellColor)
+
+        if i == 0:
+            user_cell = active_cell
         genome = environment.neat_environment.generate_empty_genome()
         active_cell.set_genome(genome)
+
+
+
+def generate_energy(total_population=10):
+    for i in range(total_population):
+        random_grid_position = environment.get_random_position()
+        if random_grid_position is None:
+            break
+        Energy(environment, random_grid_position[0], random_grid_position[1], EnergyCellColor)
 
 
 def start():
     if not environment.IsRunning():
         environment.start()
-    generate_population(total_population=3)
+    generate_population(total_population=TotalPopulation)
+    generate_energy(total_population=TotalEnergyBlocks)
     ticks = 0
     while environment.IsRunning():
         check_events()
@@ -185,6 +189,8 @@ if __name__ == '__main__':
     neat_environment = NEAT(
         total_input_nodes=24,
         total_output_nodes=5,
-        include_bias=True)
+        add_node_probability=.1,
+        add_connection_probability=.4,
+        include_bias=False)
     environment.set_neat_environment(neat_environment)
     start()

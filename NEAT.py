@@ -3,15 +3,15 @@ import random
 import numpy as np
 
 from Cell import Cell
-from NEAT.Node import Node
-from NEAT.Genome import Genome
-from NEAT.ConnectionGene import ConnectionGene
-from NEAT.Species import Species
+from Node import Node
+from Genome import Genome
+from ConnectionGene import ConnectionGene
+from Species import Species
 
 
 class NEAT:
     def __init__(self, environment=None, total_population=10, total_input_nodes=0, total_output_nodes=0,
-                 add_connection_probability=.9,
+                 add_connection_probability=.4,
                  add_node_probability=.2, include_bias=False,
                  species_threshold=3,
                  excess_coefficient=1,
@@ -103,24 +103,30 @@ class NEAT:
         senior_genomes = {}
         sorted_senior_genomes = {}
         worst_genome = None
-        for genome in (sorted(self.list_of_Genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
-            sorted_genomes[genome.ID] = genome
-            if genome.getCellBody().TotalTimeAliveInTicks >= maxTicks:
-                senior_genomes[genome.ID] = genome
-        self.list_of_Genomes = sorted_genomes
+        try:
 
-        if len(senior_genomes) > 0:
-            for genome in (sorted(senior_genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
-                sorted_senior_genomes[genome.ID] = genome
-            worst_genome = list(sorted_senior_genomes.values())[0]
+            for genome in (sorted(self.list_of_Genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
+                sorted_genomes[genome.ID] = genome
+                if genome.getCellBody().TotalTimeAliveInTicks >= maxTicks:
+                    senior_genomes[genome.ID] = genome
+            self.list_of_Genomes = sorted_genomes
 
-            worst_genome.getCellBody().isAlive = False
-            del self.Environment.active_cell_dicts[worst_genome.getCellBody().PosX, worst_genome.getCellBody().PosY]
-            worst_genome.getSpecies().remove_member(worst_genome)
-            del self.list_of_Genomes[worst_genome.ID]
-            worst_genome.getCellBody().kill()
+            if len(senior_genomes) > 0:
+                for genome in (sorted(senior_genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
+                    sorted_senior_genomes[genome.ID] = genome
+                    genome.getCellBody().TotalEnergyObtained = 0
+                worst_genome = list(sorted_senior_genomes.values())[0]
 
-        return worst_genome
+                worst_genome.getCellBody().isAlive = False
+                del self.Environment.active_cell_dicts[worst_genome.getCellBody().PosX, worst_genome.getCellBody().PosY]
+                worst_genome.getSpecies().remove_member(worst_genome)
+                del self.list_of_Genomes[worst_genome.ID]
+                worst_genome.getCellBody().kill()
+
+            return worst_genome
+
+        except TypeError:
+            return None
 
     def sort_connection_genes(self, list_of_connection_genes):
         sorted_connection_genes = {}
@@ -173,6 +179,7 @@ class NEAT:
         self.__generate_base_nodes()
 
     def evolve(self, max_ticks_until_update):
+
         for genome in list(self.list_of_Genomes.values()):
             genome.calculate_adjusted_fitness()
 
@@ -185,10 +192,11 @@ class NEAT:
             self.sort_species()
             species_for_breeding = random.choice(list(self.list_of_Species.values()))
             offspring = species_for_breeding.breed()
-            active_cell = Cell(self.Environment, worst_genome.getCellBody().PosX, worst_genome.getCellBody().PosY)
-            offspring.set_cell_body(active_cell)
-            active_cell.set_genome(offspring)
-            offspring.getCellBody().ChangeCellColor((0, 255, 255))
+            if offspring is not None:
+                active_cell = Cell(self.Environment, worst_genome.getCellBody().PosX, worst_genome.getCellBody().PosY)
+                offspring.set_cell_body(active_cell)
+                active_cell.set_genome(offspring)
+                offspring.getCellBody().ChangeCellColor((0, 255, 255))
 
         self.reassign_species()
 
@@ -207,19 +215,32 @@ def printGlobalGenes():
 if __name__ == '__main__':
     neat_environment = NEAT(total_population=10,
                             total_input_nodes=3,
-                            total_output_nodes=5,
-                            include_bias=True)
+                            total_output_nodes=1,
+                            add_node_probability=.1,
+                            add_connection_probability=.1,
+                            include_bias=False)
 
     print()
     genome = neat_environment.generate_empty_genome()
     genome.add_connection()
     genome.add_node()
     genome.add_node()
+    genome.add_node()
 
-    genome2 = neat_environment.generate_empty_genome()
-    genome2.add_connection()
-    genome2.add_connection()
 
-    printGlobalGenes()
-    genome.printGenotype()
-    genome2.printGenotype()
+
+
+    # printGlobalGenes()
+
+    for genome in list(neat_environment.list_of_Genomes.values()):
+        genome.printGenotype()
+
+        inputs = [1,.5,2,0]
+        genome.forward(inputs)
+    # genome2.forward(inputs)
+
+
+
+
+
+

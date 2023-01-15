@@ -10,7 +10,7 @@ class Node:
         self.neat_environment = neat_environment
         self.ID = ID
         self.NodeType = node_type
-        self.input = None
+        self.input = 0
         self.Connection_Genes = {}
         if self.NodeType == 'sensor' or self.NodeType == 'bias':
             self.NodeType_Code = .1
@@ -25,21 +25,13 @@ class Node:
 
     def calculate(self):
         z = 0.0
-
+        # print('Node', self.ID, 'Out:',self.getInput())
         for connection_gene in list(self.Connection_Genes.values()):
             if not connection_gene.is_expressed:
                 continue
-            in_node = connection_gene.getGenome().Node_Genes[connection_gene.in_node]  #self.neat_environment.list_of_Nodes[connection_gene.in_node]
-            out_node = connection_gene.getGenome().Node_Genes[connection_gene.in_node]  #self.neat_environment.list_of_Nodes[connection_gene.in_node]
-
-            in_node_input = in_node.getInput()
-            if in_node_input is None:
-                for conn in list(connection_gene.getGenome().Connection_Genes.values()):
-                    in_node = conn.in_node
-                    out_node = conn.out_node
-                    # print("(", in_node, '=>', out_node,")")
-
-            output = in_node_input * connection_gene.weight
+            in_node = connection_gene.getGenome().Node_Genes[connection_gene.in_node]
+            # print(in_node.getInput(), '*', connection_gene.weight)
+            output = in_node.getInput() * connection_gene.weight
             z += output
         self.set_input(sigmoid(z))
         return self.input
