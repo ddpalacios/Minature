@@ -11,20 +11,30 @@ from Species import Species
 
 class NEAT:
     def __init__(self, environment=None, total_population=10, total_input_nodes=0, total_output_nodes=0,
-                 add_connection_probability=.4,
-                 add_node_probability=.2, include_bias=False,
+                 add_connection_probability=.1,
+                 weight_shift_strength=.1,
+                 weight_change_strength=.1,
+                 add_node_probability=.1, include_bias=False,
                  species_threshold=3,
                  excess_coefficient=1,
+                 weight_shift_probability=.1,
+                 weight_change_probability=.1,
                  disjoint_coefficient=1,
-                 weight_coefficient=1
+                 weight_coefficient=1,
+                 minimum_time_alive=10
                  ):
         self.ID = 0
+        self.weight_change_strength = weight_change_strength
+        self.weight_change_probability = weight_change_probability
+        self.weight_shift_probability = weight_shift_probability
+        self.weight_shift_strength = weight_shift_strength
         self.Environment = environment
         self.total_population = total_population
         self.total_sensor_nodes = total_input_nodes
         self.total_output_nodes = total_output_nodes
         self.include_bias = include_bias
         self.total_hidden_nodes = 0
+        self.minimum_time_alive = minimum_time_alive
         self.total_nodes = total_input_nodes + total_output_nodes
         self.add_connection_probability = add_connection_probability
         self.add_node_probability = add_node_probability
@@ -33,6 +43,7 @@ class NEAT:
         self.disjoint_coefficient = disjoint_coefficient
         self.weight_coefficient = weight_coefficient
         self.species_threshold = species_threshold
+        self.TotalSpeciesCreated = 0
 
         self.list_of_Connection_Genes = {}
         self.list_of_Nodes = {}
@@ -61,22 +72,34 @@ class NEAT:
         return self.list_of_Species
 
     def reassign_species(self):
+        self.sort_genomes()
+
+        for species in list(self.list_of_Species.values()):
+            members = species.sort()
+            if len(members) == 0:
+                del self.list_of_Species[species.ID]
+            else:
+                species.set_representative(list(members.values())[0])
+                species.members = {}
+
         for genome in list(self.list_of_Genomes.values()):
             genome.set_species(None)
             found_species = False
 
             for species in list(self.list_of_Species.values()):
+
                 if species.is_compatible(genome=genome):
                     found_species = True
                     species.add_member(genome)
                     genome.set_species(species)
                     break
             if not found_species:
+                self.TotalSpeciesCreated += 1
                 new_species = self.generate_new_species(genome=genome)
                 self.list_of_Species[new_species.ID] = new_species
 
     def generate_new_species(self, genome):
-        species = Species(ID=len(self.list_of_Species) + 1, neat_environment=self)
+        species = Species(ID=self.TotalSpeciesCreated, neat_environment=self)
         genome.set_species(species)
         species.set_representative(genome)
         return species
@@ -98,25 +121,24 @@ class NEAT:
             self.list_of_Connection_Genes = sorted_genes
             return connection_gene
 
-    def remove_worst_genome(self, maxTicks):
+    def remove_worst_genome(self):
         sorted_genomes = {}
         senior_genomes = {}
         sorted_senior_genomes = {}
         worst_genome = None
         try:
-
             for genome in (sorted(self.list_of_Genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
                 sorted_genomes[genome.ID] = genome
-                if genome.getCellBody().TotalTimeAliveInTicks >= maxTicks:
+
+                if genome.getCellBody().TotalTimeAliveInTicks >= self.minimum_time_alive:
                     senior_genomes[genome.ID] = genome
             self.list_of_Genomes = sorted_genomes
 
-            if len(senior_genomes) > 0:
+            if len(senior_genomes) > 3:
                 for genome in (sorted(senior_genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
                     sorted_senior_genomes[genome.ID] = genome
-                    genome.getCellBody().TotalEnergyObtained = 0
-                worst_genome = list(sorted_senior_genomes.values())[0]
 
+                worst_genome = list(sorted_senior_genomes.values())[0]
                 worst_genome.getCellBody().isAlive = False
                 del self.Environment.active_cell_dicts[worst_genome.getCellBody().PosX, worst_genome.getCellBody().PosY]
                 worst_genome.getSpecies().remove_member(worst_genome)
@@ -135,6 +157,13 @@ class NEAT:
             sorted_connection_genes[pair] = conn
         list_of_connection_genes = sorted_connection_genes
         return list_of_connection_genes
+
+    def sort_genomes(self):
+        sorted_genomes = {}
+        for genome in (sorted(self.list_of_Genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
+            sorted_genomes[genome.ID] = genome
+        self.list_of_Genomes = sorted_genomes
+        return self.list_of_Genomes
 
     def __generate_base_nodes(self):
         node_id = 1
@@ -178,12 +207,12 @@ class NEAT:
     def initialize(self):
         self.__generate_base_nodes()
 
-    def evolve(self, max_ticks_until_update):
+    def evolve(self):
 
         for genome in list(self.list_of_Genomes.values()):
             genome.calculate_adjusted_fitness()
 
-        worst_genome = self.remove_worst_genome(max_ticks_until_update)
+        worst_genome = self.remove_worst_genome()
 
         for species in list(self.list_of_Species.values()):
             species.calculate_average_fitness()
@@ -199,6 +228,10 @@ class NEAT:
                 offspring.getCellBody().ChangeCellColor((0, 255, 255))
 
         self.reassign_species()
+        print("Number of species:", len(self.list_of_Species))
+        for species in list(self.list_of_Species.values()):
+            print("Species ID", species.ID, "Average Species Fitness", species.average_fitness)
+        print()
 
 
 def printGlobalGenes():
@@ -216,8 +249,8 @@ if __name__ == '__main__':
     neat_environment = NEAT(total_population=10,
                             total_input_nodes=3,
                             total_output_nodes=1,
-                            add_node_probability=.1,
-                            add_connection_probability=.1,
+                            add_node_probability=.2,
+                            add_connection_probability=.2,
                             include_bias=False)
 
     print()
@@ -227,20 +260,11 @@ if __name__ == '__main__':
     genome.add_node()
     genome.add_node()
 
-
-
-
     # printGlobalGenes()
 
     for genome in list(neat_environment.list_of_Genomes.values()):
         genome.printGenotype()
 
-        inputs = [1,.5,2,0]
+        inputs = [1, .5, 2, 0]
         genome.forward(inputs)
     # genome2.forward(inputs)
-
-
-
-
-
-

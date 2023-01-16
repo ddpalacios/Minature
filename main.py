@@ -10,15 +10,16 @@ from Energy import Energy
 from NEAT import NEAT
 
 sql = SQLLite()
-WindowWidth = 1500
+WindowWidth = 900
+
 WindowHeight = 900
-TotalPopulation = 0
 TotalEnergyBlocks = 0
 ActiveCellColor = (0, 0, 255)
 BackgroundColor = (0, 0, 0)
 EnergyCellColor = (255, 0, 0)
 GridColor = (60, 60, 60)
 PixelSize = 10
+evolving_time_in_ticks = 20
 screen = pg.display.set_mode((WindowWidth, WindowHeight))
 pg.display.set_caption("Miniature")
 clock = pg.time.Clock()
@@ -55,20 +56,20 @@ def get_mouse_position():
 
 
 def check_events():
-
     for event in pg.event.get():
         if event.type == pg.QUIT:
             sys.exit()
 
         if event.type == pg.KEYDOWN:
 
-
             if event.key == pg.K_SPACE:
                 environment.clear()
 
             if event.key == pg.K_n:
                 pos = environment.get_random_position()
-                Cell(environment, pos[0], pos[1], ActiveCellColor)
+                active_cell = Cell(environment, pos[0], pos[1], ActiveCellColor)
+                genome = environment.neat_environment.generate_empty_genome()
+                active_cell.set_genome(genome)
 
             if event.key == pg.K_e:
                 pos = environment.get_random_position()
@@ -82,14 +83,14 @@ def check_events():
                 environment.frames_per_second += 1
                 print(environment.frames_per_second)
 
-
             if event.key == pg.K_UP:
-                environment.pixelSize += 10
-                print(environment.pixelSize)
+                neat_environment.species_threshold +=1
+                # environment.pixelSize += 10
+                print(neat_environment.species_threshold)
 
             if event.key == pg.K_DOWN:
-                environment.pixelSize -= 10
-                print(environment.pixelSize)
+                neat_environment.species_threshold -= 1
+                print(neat_environment.species_threshold)
 
         if event.type == pg.MOUSEBUTTONDOWN:
             xpos, ypos = get_mouse_position()
@@ -112,9 +113,8 @@ def draw_grid():
 
 
 def update(ticks):
-    max_ticks_until_update = 100
     for active_cell in environment.active_cell_entities:
-
+        active_cell.TotalTimeAliveInTicks += 1
         active_cell.ChangeCellColor(ActiveCellColor)
         genome = active_cell.getGenome()
         vision_inputs = active_cell.scan()
@@ -129,13 +129,12 @@ def update(ticks):
         if output == 4:
             active_cell.move_right()
         else:
-            genome.fitness_score = genome.fitness_score - 100
+            active_cell.TotalEnergyLevel -= 1
 
         genome.calculateFitness()
-        active_cell.TotalTimeAliveInTicks += 1
 
-
-    neat_environment.evolve(max_ticks_until_update)
+    if (ticks % get_evolution_rate(ineligibility_rate=ineligibility_rate)) == 0:
+        neat_environment.evolve()
     screen.fill(BackgroundColor)
     draw_grid()
     environment.active_cell_entities.update()
@@ -151,12 +150,8 @@ def generate_population(total_population=10):
         if random_grid_position is None:
             break
         active_cell = Cell(environment, random_grid_position[0], random_grid_position[1], ActiveCellColor)
-
-        if i == 0:
-            user_cell = active_cell
         genome = environment.neat_environment.generate_empty_genome()
         active_cell.set_genome(genome)
-
 
 
 def generate_energy(total_population=10):
@@ -182,15 +177,34 @@ def start():
     return environment
 
 
+def get_evolution_rate(ineligibility_rate):
+    P = len(neat_environment.list_of_Genomes)
+    if P == 0:
+        return 1
+    min_time_alive = neat_environment.minimum_time_alive
+    number_of_ticks_to_evolve = min_time_alive / (P * ineligibility_rate)
+    return int(number_of_ticks_to_evolve)
+
+
 if __name__ == '__main__':
     # sql.create_miniature_environment_tables()
     # print("Environment #", environment.id, "Was made")
     # print("there are", get_total_environments(), 'Environment(s) Available')
+    TotalPopulation = 5
+    minimum_time_alive = 100
+    species_threshold = 5
+    ineligibility_rate = .5
     neat_environment = NEAT(
         total_input_nodes=24,
         total_output_nodes=5,
         add_node_probability=.1,
-        add_connection_probability=.4,
-        include_bias=False)
+        species_threshold=species_threshold,
+        add_connection_probability=.1,
+        weight_change_probability=.1,
+        weight_change_strength = .1,
+        weight_shift_probability = .1,
+        weight_shift_strength=.1,
+        minimum_time_alive=minimum_time_alive,
+        include_bias=True)
     environment.set_neat_environment(neat_environment)
     start()

@@ -11,11 +11,18 @@ class Species:
         self.members = {}
         self.average_fitness = 0.0
 
+    def sort(self):
+        sorted_genome = {}
+        for genome in (sorted(self.members.values(), key=operator.attrgetter('adjusted_fitness_score'),reverse=True)):
+            sorted_genome[genome.ID] = genome
+        self.members = sorted_genome
+        return self.members
+
     def breed(self):
         try:
-
-            random_genome1 = random.choice(list(self.members.values()))
-            random_genome2 = random.choice(list(self.members.values()))
+            self.sort()
+            random_genome1 = list(self.members.values())[0] #random.choice(list(self.members.values()))
+            random_genome2 = list(self.members.values())[1] #random.choice(list(self.members.values()))
             random_genome1.getCellBody().ChangeCellColor((255,255,255))
             random_genome2.getCellBody().ChangeCellColor((255,255,255))
 
@@ -101,6 +108,7 @@ class Species:
 
     def is_compatible(self, genome):
         compatibility_distance = self.get_compatibility_distance(genome)
+        # print(compatibility_distance)
         if compatibility_distance < self.neat_environment.species_threshold:
             return True
         else:

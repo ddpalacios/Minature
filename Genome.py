@@ -66,26 +66,34 @@ class Genome:
         output = output_probability.index(max(output_probability))
         return output
 
-        # for hidden_node_idx in range(len(inputs), len(self.Node_Genes) + self.neat_environment.total_output_nodes):
-        #     node = self.Node_Genes[hidden_node_idx + 1]
-        #     if .1 < node.NodeType_Code < .9:
-        #         node.calculate()
-        #
-        # output_probability = []
-        # for output_node_idx in range(self.neat_environment.total_output_nodes):
-        #     output_node = self.Node_Genes[len(self.Node_Genes) - output_node_idx + 1]
-        #     if output_node.NodeType == .9:
-        #         output = output_node.calculate()
-        #         output_probability.append(output)
-        #
-        # return output
-
     def mutate(self):
-        if self.neat_environment.add_connection_probability > np.random.randn():
+        if self.neat_environment.add_connection_probability > np.random.rand():
             self.add_connection()
 
-        if self.neat_environment.add_node_probability > np.random.randn():
+        if self.neat_environment.add_node_probability > np.random.rand():
             self.add_node()
+
+        if self.neat_environment.weight_shift_probability > np.random.rand():
+            self.shift_random_weight()
+
+        if self.neat_environment.weight_change_probability > np.random.rand():
+            self.mutate_random_weight()
+
+    def mutate_random_weight(self):
+        if len(self.Connection_Genes) == 0:
+            return
+        random_connection = random.choice(list(self.Connection_Genes.values()))
+        new_weight = (np.random.randn()) * self.neat_environment.weight_change_strength
+        random_connection.setWeight(new_weight)
+
+
+    def shift_random_weight(self):
+        if len(self.Connection_Genes) == 0:
+            return
+        random_connection = random.choice(list(self.Connection_Genes.values()))
+        old_weight = random_connection.getWeight()
+        new_weight = (old_weight + np.random.randn()) * self.neat_environment.weight_shift_strength
+        random_connection.setWeight(new_weight)
 
     def add_node_to_phenotype(self, node):
         node = Node(self.neat_environment, node.ID, node_type=node.NodeType)
@@ -166,9 +174,7 @@ class Genome:
             if (new_connection.in_node, new_connection.out_node) in self.Connection_Genes:
                 continue
             else:
-                # print(node1.ID, '=>', node2.ID)
                 new_connection = self.add_connection_to_phenotype(new_connection)
-                # node1.add_connection_gene(new_connection)
                 node2.add_connection_gene(new_connection)
                 return
 
@@ -235,15 +241,8 @@ class Genome:
         return self.Species
 
     def calculateFitness(self):
-        total_energy_obtained = self.getCellBody().TotalEnergyObtained
-        total_steps_taken = self.getCellBody().TotalStepsTaken
-        energy_remaining = self.getCellBody().TotalEnergyRemaining + total_energy_obtained - total_steps_taken
-        self.fitness_score += (total_energy_obtained ** 2) - (total_steps_taken)
-        self.getCellBody().TotalEnergyRemaining = energy_remaining
-        # if self.fitness_score < 0:
-        #     self.fitness_score = 0
-        # elif self.fitness_score > 100:
-        #     self.fitness_score = 100
+        self.fitness_score = self.getCellBody().getEnergyLevel() + (
+                self.getCellBody().TotalStepsTaken + self.getCellBody().TotalEnergyObtained) **2
 
     def getFitness(self):
         return self.fitness_score

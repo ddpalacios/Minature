@@ -25,12 +25,10 @@ class Node:
 
     def calculate(self):
         z = 0.0
-        # print('Node', self.ID, 'Out:',self.getInput())
         for connection_gene in list(self.Connection_Genes.values()):
             if not connection_gene.is_expressed:
                 continue
             in_node = connection_gene.getGenome().Node_Genes[connection_gene.in_node]
-            # print(in_node.getInput(), '*', connection_gene.weight)
             output = in_node.getInput() * connection_gene.weight
             z += output
         self.set_input(sigmoid(z))

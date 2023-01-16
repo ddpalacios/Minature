@@ -23,7 +23,7 @@ class Cell(pg.sprite.Sprite):
         self.fitness = 0
         self.isAlive = True
         self.TotalTimeAliveInTicks = 0
-        self.TotalEnergyRemaining = 100
+        self.TotalEnergyLevel = 0
         self.TotalEnergyObtained = 0
         self.TotalStepsTaken = 0
         self.PosX = xpos
@@ -44,6 +44,8 @@ class Cell(pg.sprite.Sprite):
         #     "UPDATE {1} SET EnvID = {0} WHERE id = {2}".format(self.EnvID, self.entity_name, self.id))
         self.environment.add_active_cell()
 
+    def getEnergyLevel(self):
+        return self.TotalEnergyLevel
     def ChangeCellColor(self, rgb):
         self.image.fill(rgb)
 
@@ -86,19 +88,25 @@ class Cell(pg.sprite.Sprite):
             if self.hit_energy(self.PosX, self.PosY):
                 random_grid_position = self.environment.get_random_position()
                 if random_grid_position is not None:
+                    self.TotalEnergyLevel += 1000
+                    self.TotalEnergyObtained +=1
                     energy_cell = self.environment.energy_cell_dicts[self.PosX, self.PosY]
                     energy_cell.update_position(random_grid_position[0], random_grid_position[1])
+
         else:
             if self.hit_wall(new_x, new_y):
                 if self.PosX - self.environment.pixelSize < 0:
                     self.update_position(self.environment.env_width - self.environment.pixelSize, self.PosY)
-                elif self.PosX + self.environment.pixelSize > self.environment.env_width-self.environment.pixelSize:
+                elif self.PosX + self.environment.pixelSize > self.environment.env_width - self.environment.pixelSize:
                     self.update_position(0, self.PosY)
 
                 if self.PosY - self.environment.pixelSize < 0:
                     self.update_position(self.PosX, self.environment.env_height - self.environment.pixelSize)
-                elif self.PosY + self.environment.pixelSize > self.environment.env_height-self.environment.pixelSize:
+                elif self.PosY + self.environment.pixelSize > self.environment.env_height - self.environment.pixelSize:
                     self.update_position(self.PosX, 0)
+
+        self.TotalEnergyLevel -= 100
+        self.TotalStepsTaken += 1
 
     def move_randomly(self):
         rand = random.randint(1, 4)
