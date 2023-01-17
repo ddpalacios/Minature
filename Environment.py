@@ -7,8 +7,9 @@ import random
 
 class Environment:
     def __init__(self, env_width=50, env_height=50, total_population=100, total_energy_blocks=50, pixel_size=5,
-                 frames_per_second=60):
+                 frames_per_second=60,     ineligibility_rate = .5):
         self.sql_db = SQLLite()
+        self.ineligibility_rate = ineligibility_rate
         self.entity_name = 'Environment'
         self.__isRunning = False
         self.pixelSize = pixel_size

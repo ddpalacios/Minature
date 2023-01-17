@@ -42,10 +42,24 @@ class Cell(pg.sprite.Sprite):
         self.rect.y = self.PosY
         # self.sql_db.execute_query(
         #     "UPDATE {1} SET EnvID = {0} WHERE id = {2}".format(self.EnvID, self.entity_name, self.id))
+
         self.environment.add_active_cell()
+
+    def IsAlive(self, is_alive=None):
+        if is_alive is not None:
+            self.isAlive = is_alive
+            if not self.isAlive:
+                self.TotalEnergyLevel = 0
+                self.TotalStepsTaken = 0
+                self.TotalEnergyObtained = 0
+                self.TotalTimeAliveInTicks = 0
+
+        else:
+            return self.isAlive
 
     def getEnergyLevel(self):
         return self.TotalEnergyLevel
+
     def ChangeCellColor(self, rgb):
         self.image.fill(rgb)
 
@@ -53,6 +67,8 @@ class Cell(pg.sprite.Sprite):
         return self.genome
 
     def set_genome(self, genome):
+        if genome is None:
+            return
         genome.set_cell_body(self)
         self.genome = genome
 
@@ -65,10 +81,8 @@ class Cell(pg.sprite.Sprite):
 
     def hit_energy(self, new_x, new_y):
         if (new_x, new_y) in self.environment.energy_cell_dicts:
-            self.TotalEnergyObtained += 100
             return True
         else:
-            self.TotalStepsTaken += 1
             return False
 
     def hit_active_cell(self, new_x, new_y):
@@ -85,16 +99,24 @@ class Cell(pg.sprite.Sprite):
             self.environment.active_cell_dicts[(new_x, new_y)] = self
             self.rect.x = new_x
             self.rect.y = new_y
+            self.TotalStepsTaken += 1
+
             if self.hit_energy(self.PosX, self.PosY):
+                self.TotalEnergyLevel +=15000
+                self.TotalEnergyObtained+=1
                 random_grid_position = self.environment.get_random_position()
                 if random_grid_position is not None:
-                    self.TotalEnergyLevel += 1000
-                    self.TotalEnergyObtained +=1
                     energy_cell = self.environment.energy_cell_dicts[self.PosX, self.PosY]
                     energy_cell.update_position(random_grid_position[0], random_grid_position[1])
 
+
         else:
             if self.hit_wall(new_x, new_y):
+                self.TotalEnergyLevel -=5000
+                # self.TotalEnergyLevel = 0
+                # self.TotalStepsTaken = 0
+
+
                 if self.PosX - self.environment.pixelSize < 0:
                     self.update_position(self.environment.env_width - self.environment.pixelSize, self.PosY)
                 elif self.PosX + self.environment.pixelSize > self.environment.env_width - self.environment.pixelSize:
@@ -105,8 +127,12 @@ class Cell(pg.sprite.Sprite):
                 elif self.PosY + self.environment.pixelSize > self.environment.env_height - self.environment.pixelSize:
                     self.update_position(self.PosX, 0)
 
-        self.TotalEnergyLevel -= 100
-        self.TotalStepsTaken += 1
+            # if self.hit_active_cell(new_x, new_y):
+            #     self.TotalEnergyLevel = 0
+
+                # self.TotalStepsTaken = 0
+
+
 
     def move_randomly(self):
         rand = random.randint(1, 4)

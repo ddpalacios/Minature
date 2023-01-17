@@ -24,6 +24,7 @@ screen = pg.display.set_mode((WindowWidth, WindowHeight))
 pg.display.set_caption("Miniature")
 clock = pg.time.Clock()
 FramesPerSecond = 90
+ineligibility_rate = .5
 environment = Environment(env_width=WindowWidth,
                           env_height=WindowHeight,
                           frames_per_second=FramesPerSecond,
@@ -76,20 +77,23 @@ def check_events():
                 Energy(environment, pos[0], pos[1], EnergyCellColor)
 
             if event.key == pg.K_LEFT:
-                environment.frames_per_second -= 1
-                print(environment.frames_per_second)
+                environment.ineligibility_rate -= .1
+                print("rate",  environment.ineligibility_rate)
 
             if event.key == pg.K_RIGHT:
-                environment.frames_per_second += 1
+                environment.ineligibility_rate += .1
+                print("rate",  environment.ineligibility_rate)
+
+
                 print(environment.frames_per_second)
 
             if event.key == pg.K_UP:
-                neat_environment.species_threshold +=1
+                neat_environment.species_threshold += .5
                 # environment.pixelSize += 10
                 print(neat_environment.species_threshold)
 
             if event.key == pg.K_DOWN:
-                neat_environment.species_threshold -= 1
+                neat_environment.species_threshold -= .5
                 print(neat_environment.species_threshold)
 
         if event.type == pg.MOUSEBUTTONDOWN:
@@ -114,8 +118,16 @@ def draw_grid():
 
 def update(ticks):
     for active_cell in environment.active_cell_entities:
+        if active_cell.getGenome() == neat_environment.HistoricalBestGenome:
+            active_cell.ChangeCellColor((0, 255, 0))
+
+        elif not active_cell.IsAlive():
+            active_cell.ChangeCellColor((255, 0, 0))
+
+        else:
+            active_cell.ChangeCellColor((0, 0, 255))
+
         active_cell.TotalTimeAliveInTicks += 1
-        active_cell.ChangeCellColor(ActiveCellColor)
         genome = active_cell.getGenome()
         vision_inputs = active_cell.scan()
         output = genome.forward(vision_inputs)
@@ -129,11 +141,14 @@ def update(ticks):
         if output == 4:
             active_cell.move_right()
         else:
-            active_cell.TotalEnergyLevel -= 1
+            active_cell.TotalEnergyLevel -= 100
+            # active_cell.TotalStepsTaken = 0
 
         genome.calculateFitness()
+    number_of_ticks_to_evolve = get_evolution_rate(ineligibility_rate=environment.ineligibility_rate)
 
-    if (ticks % get_evolution_rate(ineligibility_rate=ineligibility_rate)) == 0:
+    if (ticks % number_of_ticks_to_evolve) == 0:
+        print("Evolving at every", number_of_ticks_to_evolve, 'ticks')
         neat_environment.evolve()
     screen.fill(BackgroundColor)
     draw_grid()
@@ -190,20 +205,19 @@ if __name__ == '__main__':
     # sql.create_miniature_environment_tables()
     # print("Environment #", environment.id, "Was made")
     # print("there are", get_total_environments(), 'Environment(s) Available')
-    TotalPopulation = 5
-    minimum_time_alive = 100
+    TotalPopulation = 10
+    minimum_time_alive = 10
     species_threshold = 5
-    ineligibility_rate = .5
     neat_environment = NEAT(
         total_input_nodes=24,
         total_output_nodes=5,
-        add_node_probability=.1,
+        add_node_probability=.2,
         species_threshold=species_threshold,
-        add_connection_probability=.1,
-        weight_change_probability=.1,
-        weight_change_strength = .1,
-        weight_shift_probability = .1,
-        weight_shift_strength=.1,
+        add_connection_probability=.8,
+        weight_change_probability=0.1,
+        weight_change_strength=.1,
+        weight_shift_probability=.1,
+        weight_shift_strength=1,
         minimum_time_alive=minimum_time_alive,
         include_bias=True)
     environment.set_neat_environment(neat_environment)

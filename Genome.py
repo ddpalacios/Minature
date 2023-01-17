@@ -43,6 +43,9 @@ class Genome:
         self.Species = None
         self.CellBody = None
 
+    def getAdjustedFitness(self):
+        return self.adjusted_fitness_score
+
     def set_cell_body(self, cell):
         self.CellBody = cell
 
@@ -241,8 +244,9 @@ class Genome:
         return self.Species
 
     def calculateFitness(self):
-        self.fitness_score = self.getCellBody().getEnergyLevel() + (
-                self.getCellBody().TotalStepsTaken + self.getCellBody().TotalEnergyObtained) **2
+        self.fitness_score = self.getCellBody().TotalEnergyObtained + self.getCellBody().getEnergyLevel() + self.getCellBody().TotalStepsTaken
+        # self.getCellBody().getEnergyLevel() + (
+        #         self.getCellBody().TotalStepsTaken + self.getCellBody().TotalEnergyObtained)
 
     def getFitness(self):
         return self.fitness_score

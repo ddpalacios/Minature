@@ -2,7 +2,6 @@ import operator
 import random
 
 
-
 class Species:
     def __init__(self, ID, neat_environment):
         self.ID = ID
@@ -13,42 +12,36 @@ class Species:
 
     def sort(self):
         sorted_genome = {}
-        for genome in (sorted(self.members.values(), key=operator.attrgetter('adjusted_fitness_score'),reverse=True)):
+        for genome in (sorted(self.members.values(), key=operator.attrgetter('adjusted_fitness_score'), reverse=True)):
             sorted_genome[genome.ID] = genome
         self.members = sorted_genome
         return self.members
 
     def breed(self):
-        try:
-            self.sort()
-            random_genome1 = list(self.members.values())[0] #random.choice(list(self.members.values()))
-            random_genome2 = list(self.members.values())[1] #random.choice(list(self.members.values()))
-            random_genome1.getCellBody().ChangeCellColor((255,255,255))
-            random_genome2.getCellBody().ChangeCellColor((255,255,255))
-
-            if random_genome1.getFitness() > random_genome2.getFitness():
-                offspring = random_genome1.mate(random_genome2)
-            else:
-                offspring = random_genome2.mate(random_genome1)
-
+        if len(self.members) == 1:
+            offspring =self.neat_environment.generate_empty_genome()
             offspring.mutate()
-
             return offspring
+        else:
+            self.sort()
+            random_genome1 = list(self.members.values())[0]  # random.choice(list(self.members.values()))
+            random_genome2 = list(self.members.values())[1]  # random.choice(list(self.members.values()))
 
-        except IndexError:
-            return
+        if random_genome1.getFitness() > random_genome2.getFitness():
+            offspring = random_genome1.mate(random_genome2)
+        else:
+            offspring = random_genome2.mate(random_genome1)
+
+        offspring.mutate()
+
+        return offspring
 
     def calculate_average_fitness(self):
         total_fitness = 0
         for genome in list(self.members.values()):
-            if not genome.getCellBody().isAlive:
-                continue
             total_fitness += genome.getFitness()
 
-        try:
-            self.average_fitness = total_fitness / len(self.members)
-        except ZeroDivisionError:
-            self.average_fitness = 0
+        self.average_fitness = total_fitness / len(self.members)
 
     def get_compatibility_distance(self, genome):
         genome_innovation_number_idx = 0
@@ -119,6 +112,8 @@ class Species:
 
     def remove_member(self, genome):
         del self.members[genome.ID]
+        # if len(self.members) <3:
+        #     del self.neat_environment.list_of_Species[self.ID]
 
     def add_member(self, genome):
         self.members[genome.ID] = genome
