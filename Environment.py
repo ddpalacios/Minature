@@ -1,13 +1,14 @@
 import datetime
 from SQlite import SQLLite
 import pygame as pg
+
 pg.init()
 import random
 
 
 class Environment:
     def __init__(self, env_width=50, env_height=50, total_population=100, total_energy_blocks=50, pixel_size=5,
-                 frames_per_second=60,     ineligibility_rate = .5):
+                 frames_per_second=60, ineligibility_rate=.5):
         self.sql_db = SQLLite()
         self.ineligibility_rate = ineligibility_rate
         self.entity_name = 'Environment'
@@ -51,7 +52,7 @@ class Environment:
             rand = int(random.randint(0, self.env_width) / self.pixelSize) * self.pixelSize
             rand2 = int(random.randint(0, self.env_height) / self.pixelSize) * self.pixelSize
             if (rand, rand2) in self.active_cell_dicts or (rand, rand2) in self.energy_cell_dicts:
-                attempts +=1
+                attempts += 1
                 continue
             else:
                 return rand, rand2

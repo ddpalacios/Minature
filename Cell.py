@@ -45,15 +45,15 @@ class Cell(pg.sprite.Sprite):
 
         self.environment.add_active_cell()
 
+    def resetScore(self):
+        self.TotalEnergyLevel = 0
+        self.TotalStepsTaken = 0
+        self.TotalEnergyObtained = 0
+        self.getGenome().fitness_score = 0
+
     def IsAlive(self, is_alive=None):
         if is_alive is not None:
             self.isAlive = is_alive
-            if not self.isAlive:
-                self.TotalEnergyLevel = 0
-                self.TotalStepsTaken = 0
-                self.TotalEnergyObtained = 0
-                self.TotalTimeAliveInTicks = 0
-
         else:
             return self.isAlive
 
@@ -92,6 +92,7 @@ class Cell(pg.sprite.Sprite):
             return False
 
     def update_position(self, new_x, new_y):
+        self.TotalStepsTaken += 1
         if not self.hit_wall(new_x, new_y) and not self.hit_active_cell(new_x, new_y):
             del self.environment.active_cell_dicts[(self.PosX, self.PosY)]
             self.PosX = new_x
@@ -99,11 +100,7 @@ class Cell(pg.sprite.Sprite):
             self.environment.active_cell_dicts[(new_x, new_y)] = self
             self.rect.x = new_x
             self.rect.y = new_y
-            self.TotalStepsTaken += 1
-
             if self.hit_energy(self.PosX, self.PosY):
-                self.TotalEnergyLevel +=15000
-                self.TotalEnergyObtained+=1
                 random_grid_position = self.environment.get_random_position()
                 if random_grid_position is not None:
                     energy_cell = self.environment.energy_cell_dicts[self.PosX, self.PosY]
@@ -112,11 +109,7 @@ class Cell(pg.sprite.Sprite):
 
         else:
             if self.hit_wall(new_x, new_y):
-                self.TotalEnergyLevel -=5000
-                # self.TotalEnergyLevel = 0
-                # self.TotalStepsTaken = 0
-
-
+                self.TotalEnergyLevel-=5
                 if self.PosX - self.environment.pixelSize < 0:
                     self.update_position(self.environment.env_width - self.environment.pixelSize, self.PosY)
                 elif self.PosX + self.environment.pixelSize > self.environment.env_width - self.environment.pixelSize:
@@ -126,13 +119,6 @@ class Cell(pg.sprite.Sprite):
                     self.update_position(self.PosX, self.environment.env_height - self.environment.pixelSize)
                 elif self.PosY + self.environment.pixelSize > self.environment.env_height - self.environment.pixelSize:
                     self.update_position(self.PosX, 0)
-
-            # if self.hit_active_cell(new_x, new_y):
-            #     self.TotalEnergyLevel = 0
-
-                # self.TotalStepsTaken = 0
-
-
 
     def move_randomly(self):
         rand = random.randint(1, 4)
@@ -197,7 +183,8 @@ class Cell(pg.sprite.Sprite):
         :return: 24 inputs for all 8 directions
         """
         vision_inputs = []  # 24 input values
-        directions = [(1, 0), (1, -1), (1, 1), (-1, 0), (-1, -1), (-1, 1), (0, -1), (0, 1)]  # tuple of all 8 directions
+        directions = [(1, 0), (1, -1),
+                      (1, 1) , (-1, 0), (-1, -1), (-1, 1), (0, -1), (0, 1)]  # tuple of all 8 directions
         for dir in directions:  # iterate through all 8 directions
             vision_values = self.look(dir)  # list of 3 values returned of entity position statuses
             vision_inputs.extend(vision_values)  # Extend 3 values to input values

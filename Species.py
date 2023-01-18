@@ -19,18 +19,20 @@ class Species:
 
     def breed(self):
         if len(self.members) == 1:
-            offspring =self.neat_environment.generate_empty_genome()
-            offspring.mutate()
-            return offspring
+            self.neat_environment.sort_genomes('adjusted_fitness_score')
+            genome1 = list(self.members.values())[0]
+            genome2 = list(self.neat_environment.list_of_Genomes.values())[len(self.neat_environment.list_of_Genomes)-1]
         else:
             self.sort()
-            random_genome1 = list(self.members.values())[0]  # random.choice(list(self.members.values()))
-            random_genome2 = list(self.members.values())[1]  # random.choice(list(self.members.values()))
+            genome1 = list(self.members.values())[0]
+            genome2 = list(self.members.values())[1]
 
-        if random_genome1.getFitness() > random_genome2.getFitness():
-            offspring = random_genome1.mate(random_genome2)
+
+
+        if genome1.getFitness() > genome2.getFitness():
+            offspring = genome1.mate(genome2)
         else:
-            offspring = random_genome2.mate(random_genome1)
+            offspring = genome2.mate(genome1)
 
         offspring.mutate()
 
@@ -112,8 +114,8 @@ class Species:
 
     def remove_member(self, genome):
         del self.members[genome.ID]
-        # if len(self.members) <3:
-        #     del self.neat_environment.list_of_Species[self.ID]
+        if len(self.members) == 0:
+            del self.neat_environment.list_of_Species[self.ID]
 
     def add_member(self, genome):
         self.members[genome.ID] = genome

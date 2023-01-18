@@ -244,7 +244,7 @@ class Genome:
         return self.Species
 
     def calculateFitness(self):
-        self.fitness_score = self.getCellBody().TotalEnergyObtained + self.getCellBody().getEnergyLevel() + self.getCellBody().TotalStepsTaken
+        self.fitness_score = self.getCellBody().TotalStepsTaken **2 - self.getCellBody().getEnergyLevel()#(self.getCellBody().TotalEnergyObtained+ self.getCellBody().getEnergyLevel()) + self.getCellBody().TotalStepsTaken ** 2
         # self.getCellBody().getEnergyLevel() + (
         #         self.getCellBody().TotalStepsTaken + self.getCellBody().TotalEnergyObtained)
 

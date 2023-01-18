@@ -131,6 +131,8 @@ class NEAT:
         try:
             for genome in (sorted(self.list_of_Genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
                 sorted_genomes[genome.ID] = genome
+                if genome.getCellBody() is None:
+                    print(genome)
                 if genome.getCellBody().TotalTimeAliveInTicks > self.minimum_time_alive:
                     senior_genomes[genome.ID] = genome
             self.list_of_Genomes = sorted_genomes
@@ -155,8 +157,9 @@ class NEAT:
                     self.HistoricalWorstGenome = worst_genome
                 # print("WORST", worst_genome.ID)
                 # print("BEST", best_genome.ID)
+                if worst_genome.getSpecies() is not None:
+                    worst_genome.getSpecies().remove_member(worst_genome)
 
-                worst_genome.getSpecies().remove_member(worst_genome)
                 del self.list_of_Genomes[worst_genome.ID]
 
             return worst_genome
@@ -172,9 +175,9 @@ class NEAT:
         list_of_connection_genes = sorted_connection_genes
         return list_of_connection_genes
 
-    def sort_genomes(self):
+    def sort_genomes(self, val):
         sorted_genomes = {}
-        for genome in (sorted(self.list_of_Genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
+        for genome in (sorted(self.list_of_Genomes.values(), key=operator.attrgetter(val))):
             sorted_genomes[genome.ID] = genome
         self.list_of_Genomes = sorted_genomes
         # self.HistoricalBestGenome = list(self.list_of_Genomes.values())[len(self.list_of_Genomes)-1]
@@ -196,14 +199,18 @@ class NEAT:
             self.list_of_Nodes[node_id] = Node(self, node_id, 'output')
             node_id += 1
 
-    def generate_empty_genome(self):
+    def generate_empty_genome(self, add_to_list=True):
         attempts = 100
+        # if len(self.list_of_Genomes)>0:
+        #     genome_id = sorted(self.list_of_Genomes.values(), key=operator.attrgetter('ID'),reverse=True)[0]+1
+        # else:
         genome_id = len(self.list_of_Genomes) + 1
         for attempt in range(attempts):
             if genome_id not in self.list_of_Genomes:
                 break
             else:
                 genome_id += 1
+
         new_genome = Genome(neat_environment=self, ID=genome_id)
         if self.include_bias:
             new_node = self.get_node(node_id=1)
@@ -217,7 +224,8 @@ class NEAT:
             else:
                 new_genome.add_node_to_phenotype(new_node)
 
-        self.list_of_Genomes[genome_id] = new_genome
+        if add_to_list:
+            self.list_of_Genomes[genome_id] = new_genome
 
         return new_genome
 
@@ -228,7 +236,7 @@ class NEAT:
         for genome in list(self.list_of_Genomes.values()):
             genome.calculate_adjusted_fitness()
 
-        self.sort_genomes()
+        self.sort_genomes('adjusted_fitness_score')
 
         # for genome in list(self.list_of_Genomes.values()):
         #     print("Genome ID", genome.ID, 'Fitness', genome.getFitness(), "adjusted", genome.getAdjustedFitness(),
@@ -250,9 +258,9 @@ class NEAT:
             self.sort_species()
             species_for_breeding = list(self.list_of_Species.values())[len(self.list_of_Species) - 1]
             offspring = species_for_breeding.breed()
-            if offspring is not None:
-                offspring.set_cell_body(worst_genome.getCellBody())
-                offspring.getCellBody().set_genome(genome=offspring)
+            # print('offspring',offspring)
+            offspring.set_cell_body(worst_genome.getCellBody())
+            offspring.getCellBody().set_genome(genome=offspring)
 
         self.reassign_species()
 
