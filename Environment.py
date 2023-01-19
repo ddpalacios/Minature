@@ -63,7 +63,11 @@ class Environment:
     def add_energy_cell(self):
         self.energy_cell_dicts = {(cell.PosX, cell.PosY): cell for cell in self.energy_cell_entities}
 
-    def IsRunning(self):
+    def IsRunning(self, isRunning=None):
+        if isRunning is not None:
+            self.__isRunning = isRunning
+            return self.__isRunning
+
         return self.__isRunning
 
     def terminate(self):
