@@ -21,13 +21,11 @@ class Species:
         if len(self.members) == 1:
             self.neat_environment.sort_genomes('adjusted_fitness_score')
             genome1 = list(self.members.values())[0]
-            genome2 = list(self.neat_environment.list_of_Genomes.values())[len(self.neat_environment.list_of_Genomes)-1]
+            genome2 = list(self.members.values())[0]
         else:
             self.sort()
             genome1 = list(self.members.values())[0]
             genome2 = list(self.members.values())[1]
-
-
 
         if genome1.getFitness() > genome2.getFitness():
             offspring = genome1.mate(genome2)

@@ -44,7 +44,7 @@ class NEAT:
         self.weight_coefficient = weight_coefficient
         self.species_threshold = species_threshold
         self.TotalSpeciesCreated = 0
-        self.HistoricalWorstGenome = None
+        self.HistoricalWorstGenomeID = None
         self.HistoricalBestGenome = None
 
         self.list_of_Connection_Genes = {}
@@ -97,7 +97,7 @@ class NEAT:
                 self.generate_new_species(genome=genome)
 
         for species in list(self.list_of_Species.values()):
-            if len(species.members) ==0:
+            if len(species.members) == 0:
                 del self.list_of_Species[species.ID]
 
     def generate_new_species(self, genome):
@@ -125,43 +125,24 @@ class NEAT:
             return connection_gene
 
     def remove_worst_genome(self):
+        if len(self.list_of_Species) == 0:
+            return None
         sorted_genomes = {}
         senior_genomes = {}
         worst_genome = None
         try:
             for genome in (sorted(self.list_of_Genomes.values(), key=operator.attrgetter('adjusted_fitness_score'))):
                 sorted_genomes[genome.ID] = genome
-                if genome.getCellBody() is None:
-                    print(genome)
                 if genome.getCellBody().TotalTimeAliveInTicks > self.minimum_time_alive:
                     senior_genomes[genome.ID] = genome
             self.list_of_Genomes = sorted_genomes
 
             if len(senior_genomes) > 0:
-
-                best_genome = list(senior_genomes.values())[len(senior_genomes) - 1]
-                if self.HistoricalBestGenome is None:
-                    self.HistoricalBestGenome = best_genome
-                else:
-                    if self.HistoricalBestGenome != best_genome:
-                        self.HistoricalBestGenome.getCellBody().ChangeCellColor((0, 0, 255))
-                        self.HistoricalBestGenome = best_genome
-
                 worst_genome = list(senior_genomes.values())[0]
-                if worst_genome.getCellBody().IsAlive():
-                    if self.HistoricalWorstGenome is None:
-                        self.HistoricalWorstGenome = worst_genome
-                    else:
-                        self.HistoricalWorstGenome.getCellBody().IsAlive(is_alive=True)
-                    worst_genome.getCellBody().IsAlive(is_alive=False)
-                    self.HistoricalWorstGenome = worst_genome
-                # print("WORST", worst_genome.ID)
-                # print("BEST", best_genome.ID)
-                if worst_genome.getSpecies() is not None:
-                    worst_genome.getSpecies().remove_member(worst_genome)
-
+                worst_genome.getSpecies().remove_member(worst_genome)
+                worst_genome.getCellBody().IsAlive(is_alive=False)
                 del self.list_of_Genomes[worst_genome.ID]
-
+                self.HistoricalWorstGenomeID = worst_genome.ID
             return worst_genome
 
         except TypeError:
@@ -180,8 +161,6 @@ class NEAT:
         for genome in (sorted(self.list_of_Genomes.values(), key=operator.attrgetter(val))):
             sorted_genomes[genome.ID] = genome
         self.list_of_Genomes = sorted_genomes
-        # self.HistoricalBestGenome = list(self.list_of_Genomes.values())[len(self.list_of_Genomes)-1]
-        # self.HistoricalWorstGenome = list(self.list_of_Genomes.values())[0]
 
         return self.list_of_Genomes
 
@@ -199,12 +178,13 @@ class NEAT:
             self.list_of_Nodes[node_id] = Node(self, node_id, 'output')
             node_id += 1
 
-    def generate_empty_genome(self, add_to_list=True):
+    def generate_empty_genome(self):
         attempts = 100
-        # if len(self.list_of_Genomes)>0:
-        #     genome_id = sorted(self.list_of_Genomes.values(), key=operator.attrgetter('ID'),reverse=True)[0]+1
-        # else:
-        genome_id = len(self.list_of_Genomes) + 1
+        if self.HistoricalWorstGenomeID is None:
+            genome_id = len(self.list_of_Genomes) + 1
+        else:
+            genome_id = self.HistoricalWorstGenomeID
+
         for attempt in range(attempts):
             if genome_id not in self.list_of_Genomes:
                 break
@@ -224,8 +204,7 @@ class NEAT:
             else:
                 new_genome.add_node_to_phenotype(new_node)
 
-        if add_to_list:
-            self.list_of_Genomes[genome_id] = new_genome
+        self.list_of_Genomes[genome_id] = new_genome
 
         return new_genome
 
@@ -233,47 +212,25 @@ class NEAT:
         self.__generate_base_nodes()
 
     def evolve(self):
+
         for genome in list(self.list_of_Genomes.values()):
             genome.calculate_adjusted_fitness()
 
         self.sort_genomes('adjusted_fitness_score')
 
-        # for genome in list(self.list_of_Genomes.values()):
-        #     print("Genome ID", genome.ID, 'Fitness', genome.getFitness(), "adjusted", genome.getAdjustedFitness(),
-        #           "time alive (ticks)", genome.getCellBody().TotalTimeAliveInTicks)
-        #
         worst_genome = self.remove_worst_genome()
-        #
-        # if self.HistoricalBestGenome is not None and self.HistoricalBestGenome is not None:
-        #     print("Best Genome ID", self.HistoricalBestGenome.ID)
-        #     print("Worst Genome ID", self.HistoricalWorstGenome.ID)
-        # print()
-        # print("Total Species", len(self.list_of_Species))
-
         for species in list(self.list_of_Species.values()):
             species.calculate_average_fitness()
-        # print()
 
         if len(self.list_of_Species) > 0 and worst_genome is not None:
             self.sort_species()
             species_for_breeding = list(self.list_of_Species.values())[len(self.list_of_Species) - 1]
             offspring = species_for_breeding.breed()
-            # print('offspring',offspring)
+            worst_genome.getCellBody().IsAlive(is_alive=True)
             offspring.set_cell_body(worst_genome.getCellBody())
             offspring.getCellBody().set_genome(genome=offspring)
 
         self.reassign_species()
-
-        for species in list(self.list_of_Species.values()):
-            print("Species ID", species.ID, "Average Fitness", species.average_fitness, "Member length",
-                  len(species.members))
-        print()
-
-        # print("Number of species:", len(self.list_of_Species))
-        # for species in list(self.list_of_Species.values()):
-        #     print("Species ID", species.ID, "Average Species Fitness", species.average_fitness)
-        # print()
-        #
 
 
 def printGlobalGenes():

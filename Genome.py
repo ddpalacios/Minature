@@ -89,7 +89,6 @@ class Genome:
         new_weight = (np.random.randn()) * self.neat_environment.weight_change_strength
         random_connection.setWeight(new_weight)
 
-
     def shift_random_weight(self):
         if len(self.Connection_Genes) == 0:
             return
@@ -244,9 +243,7 @@ class Genome:
         return self.Species
 
     def calculateFitness(self):
-        self.fitness_score = self.getCellBody().TotalStepsTaken **2 - self.getCellBody().getEnergyLevel()#(self.getCellBody().TotalEnergyObtained+ self.getCellBody().getEnergyLevel()) + self.getCellBody().TotalStepsTaken ** 2
-        # self.getCellBody().getEnergyLevel() + (
-        #         self.getCellBody().TotalStepsTaken + self.getCellBody().TotalEnergyObtained)
+        self.fitness_score = self.getCellBody().getEnergyLevel()
 
     def getFitness(self):
         return self.fitness_score

@@ -54,6 +54,8 @@ class Cell(pg.sprite.Sprite):
     def IsAlive(self, is_alive=None):
         if is_alive is not None:
             self.isAlive = is_alive
+            self.TotalTimeAliveInTicks = 0
+            self.TotalEnergyLevel = 0
         else:
             return self.isAlive
 
@@ -92,7 +94,6 @@ class Cell(pg.sprite.Sprite):
             return False
 
     def update_position(self, new_x, new_y):
-        self.TotalStepsTaken += 1
         if not self.hit_wall(new_x, new_y) and not self.hit_active_cell(new_x, new_y):
             del self.environment.active_cell_dicts[(self.PosX, self.PosY)]
             self.PosX = new_x
@@ -106,10 +107,8 @@ class Cell(pg.sprite.Sprite):
                     energy_cell = self.environment.energy_cell_dicts[self.PosX, self.PosY]
                     energy_cell.update_position(random_grid_position[0], random_grid_position[1])
 
-
         else:
             if self.hit_wall(new_x, new_y):
-                self.TotalEnergyLevel-=5
                 if self.PosX - self.environment.pixelSize < 0:
                     self.update_position(self.environment.env_width - self.environment.pixelSize, self.PosY)
                 elif self.PosX + self.environment.pixelSize > self.environment.env_width - self.environment.pixelSize:
@@ -184,7 +183,7 @@ class Cell(pg.sprite.Sprite):
         """
         vision_inputs = []  # 24 input values
         directions = [(1, 0), (1, -1),
-                      (1, 1) , (-1, 0), (-1, -1), (-1, 1), (0, -1), (0, 1)]  # tuple of all 8 directions
+                      (1, 1), (-1, 0), (-1, -1), (-1, 1), (0, -1), (0, 1)]  # tuple of all 8 directions
         for dir in directions:  # iterate through all 8 directions
             vision_values = self.look(dir)  # list of 3 values returned of entity position statuses
             vision_inputs.extend(vision_values)  # Extend 3 values to input values
