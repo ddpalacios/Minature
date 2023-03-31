@@ -113,37 +113,28 @@ class Genome:
     def add_node(self):
         if len(self.Connection_Genes) == 0:
             return
+        new_node = self.neat_environment.get_node(len(self.Node_Genes) + 1)
         for attempt in range(100):
-
             random_connection = random.choice(list(self.Connection_Genes.values()))
-            random_connection.is_expressed = False
-
-            new_node = self.neat_environment.get_node(len(self.Node_Genes) + 1)
             if random_connection.in_node == new_node.ID or random_connection.out_node == new_node.ID:
                 continue
-            new_node.NodeType = 'hidden'
-            new_node = self.add_node_to_phenotype(new_node)
-
             in_node = self.Node_Genes[random_connection.in_node]
             out_node = self.Node_Genes[random_connection.out_node]
-
+            new_node.NodeType = 'hidden'
+            random_connection.is_expressed = False
+            new_node = self.add_node_to_phenotype(new_node)
             new_node.NodeType_Code = (in_node.NodeType_Code + out_node.NodeType_Code) / 2
-
             # print('nodes to connect', in_node.ID , '=>', new_node.ID,'=>',out_node.ID)
-
             new_connection1 = self.neat_environment.get_connection(in_node.ID, new_node.ID)
-            # print('conn1',new_connection1.in_node, '=>', new_connection1.out_node)
-
+            # # print('conn1',new_connection1.in_node, '=>', new_connection1.out_node)
             new_connection2 = self.neat_environment.get_connection(new_node.ID, out_node.ID)
             # print('conn2', new_connection2.in_node, '=>', new_connection2.out_node)
-
             new_connection1 = self.add_connection_to_phenotype(new_connection1)
             new_connection2 = self.add_connection_to_phenotype(new_connection2)
             new_connection1.setWeight(1)
             new_connection2.setWeight(random_connection.getWeight())
-
             new_node.add_connection_gene(new_connection1)
-            # in_node.add_connection_gene(new_connection1)
+            in_node.add_connection_gene(new_connection1)
             out_node.add_connection_gene(new_connection2)
 
             return new_node
@@ -243,7 +234,16 @@ class Genome:
         return self.Species
 
     def calculateFitness(self):
-        self.fitness_score = self.getCellBody().getEnergyLevel()
+        active_cell = self.getCellBody()
+        time_alive = active_cell.TimeAlive
+        energy_level = active_cell.TotalEnergyLevel
+        # if time_alive < 1500:
+        #     self.fitness_score = energy_level-500 * time_alive
+        # else:
+        #     print("Time alive reached.")
+        self.fitness_score = energy_level
+
+
 
     def getFitness(self):
         return self.fitness_score

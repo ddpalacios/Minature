@@ -5,6 +5,9 @@ pg.init()
 from SQlite import SQLLite
 import random
 
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+
 
 class Cell(pg.sprite.Sprite):
     def __init__(self, environment, xpos, ypos, cell_color=(0, 0, 255)):
@@ -23,6 +26,7 @@ class Cell(pg.sprite.Sprite):
         self.fitness = 0
         self.isAlive = True
         self.TotalTimeAliveInTicks = 0
+        self.TimeAlive = 0
         self.TotalEnergyLevel = 0
         self.TotalEnergyObtained = 0
         self.TotalStepsTaken = 0
@@ -30,6 +34,10 @@ class Cell(pg.sprite.Sprite):
         self.PosY = ypos
         self.DirX = 0
         self.DirY = 0
+        self.HitBlock = False
+        self.AteFood = False
+        self.HitWall = False
+        self.HitCell = False
         self.UpdateDateTime = "null"
         self.EndDateTime = 'null'
         self.CreateDateTime = datetime.datetime.timestamp(datetime.datetime.now()) * 1000
@@ -46,16 +54,20 @@ class Cell(pg.sprite.Sprite):
         self.environment.add_active_cell()
 
     def resetScore(self):
+        # self.TotalStepsTaken = 0
+        # self.TotalEnergyObtained = 0
         self.TotalEnergyLevel = 0
-        self.TotalStepsTaken = 0
-        self.TotalEnergyObtained = 0
         self.getGenome().fitness_score = 0
+        self.TotalTimeAliveInTicks = 0
+        self.AteFood = False
+        self.HitWall = False
+        self.HitCell = False
+        self.HitBlock = False
+
 
     def IsAlive(self, is_alive=None):
         if is_alive is not None:
-            self.isAlive = is_alive
-            self.TotalTimeAliveInTicks = 0
-            self.TotalEnergyLevel = 0
+            self.resetScore()
         else:
             return self.isAlive
 
@@ -87,6 +99,12 @@ class Cell(pg.sprite.Sprite):
         else:
             return False
 
+    def hit_block(self, new_x, new_y):
+        if (new_x, new_y) in self.environment.wall_cell_dicts:
+            return True
+        else:
+            return False
+
     def hit_active_cell(self, new_x, new_y):
         if (new_x, new_y) in self.environment.active_cell_dicts:
             return True
@@ -95,6 +113,10 @@ class Cell(pg.sprite.Sprite):
 
     def update_position(self, new_x, new_y):
         if not self.hit_wall(new_x, new_y) and not self.hit_active_cell(new_x, new_y):
+            if self.hit_block(new_x, new_y):
+                self.HitBlock = True
+                return
+
             del self.environment.active_cell_dicts[(self.PosX, self.PosY)]
             self.PosX = new_x
             self.PosY = new_y
@@ -104,11 +126,16 @@ class Cell(pg.sprite.Sprite):
             if self.hit_energy(self.PosX, self.PosY):
                 random_grid_position = self.environment.get_random_position()
                 if random_grid_position is not None:
+                    self.AteFood = True
                     energy_cell = self.environment.energy_cell_dicts[self.PosX, self.PosY]
                     energy_cell.update_position(random_grid_position[0], random_grid_position[1])
 
         else:
+            if self.hit_active_cell(new_x, new_y):
+                self.HitCell = True
             if self.hit_wall(new_x, new_y):
+                self.HitWall = True
+
                 if self.PosX - self.environment.pixelSize < 0:
                     self.update_position(self.environment.env_width - self.environment.pixelSize, self.PosY)
                 elif self.PosX + self.environment.pixelSize > self.environment.env_width - self.environment.pixelSize:
@@ -148,88 +175,44 @@ class Cell(pg.sprite.Sprite):
         new_y = self.PosY - self.environment.pixelSize
         self.update_position(self.PosX, new_y)
 
-    # def create_new_cell_record(self):
-    #     cursor = self.sql_db.execute_query('SELECT * FROM {}'.format(self.entity_name))
-    #     column_names = list(map(lambda x: x[0], cursor.description))
-    #     column_names.remove("id")
-    #     column_names = ",".join(column_names)
-    #     query = '''INSERT INTO {0} ({1}) VALUES ({2},{3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19});
-    #                     '''.format(
-    #         self.entity_name,  # 0
-    #         column_names,  # 1
-    #         self.EnvID,  # 2
-    #         self.AdjustedFitness,  # 3
-    #         self.fitness,  # 4
-    #         self.isAlive,  # 5
-    #         self.TotalTimeAliveInTicks,  # 6
-    #         self.TotalEnergyRemaining,  # 7
-    #         self.TotalEnergyObtained,  # 8
-    #         self.PosX,  # 9
-    #         self.PosY,  # 10
-    #         self.DirX,  # 11
-    #         self.DirY,  # 12
-    #         self.UpdateDateTime,  # 13
-    #         self.CreateDateTime,  # 14
-    #         self.EndDateTime,  # 15
-    #         self.GenerationNumber,  # 16
-    #         self.TotalNodes,  # 17
-    #         self.TotalConnections,  # 18
-    #         self.SpeciesID)  # 19
-    #     self.sql_db.execute_query(query)
-
     def scan(self):
         """
         :return: 24 inputs for all 8 directions
         """
         vision_inputs = []  # 24 input values
-        directions = [(1, 0), (1, -1),
-                      (1, 1), (-1, 0), (-1, -1), (-1, 1), (0, -1), (0, 1)]  # tuple of all 8 directions
+        directions = [(-1, 0), (-1, -1), (-1, 1), (1, 0), (1, -1), (1, 1), (0, -1), (0, 1)]  # tuple of all 8 directions
         for dir in directions:  # iterate through all 8 directions
             vision_values = self.look(dir)  # list of 3 values returned of entity position statuses
-            vision_inputs.extend(vision_values)  # Extend 3 values to input values
+            vision_inputs.append(vision_values)  # Extend 3 values to input values
 
-        if self.environment.neat_environment.include_bias:
-            vision_inputs.insert(0, 1)
-
-        return vision_inputs  # all 24 inputs for all 8 direction (8*3)
+        # if self.environment.neat_environment.include_bias:
+        #     vision_inputs.insert(0, 1)
+        vision_inputs = StandardScaler().fit_transform(np.array(vision_inputs).reshape(-1, 1))
+        return vision_inputs
 
     def look(self, dir):
         """
         :return: 3 values in specified direction of entity positions
         """
-        vision_values = [0, 0, 0]
-        direction_y, direction_x = dir[0], dir[1]
-        hit_wall, hit_active_cell, hit_energy_cell = False, False, False
+        direction_y, direction_x = dir[0] * self.environment.pixelSize, dir[1] * self.environment.pixelSize
+        hit_wall, hit_block, hit_active_cell, hit_energy_cell = False, False, False, False
         distance = 0
         current_xpos, current_ypos = self.PosX, self.PosY
         # iterate & update positions until wall is hit
         current_xpos += direction_x
         current_ypos += direction_y
 
-        while not hit_wall:
-            if self.hit_wall(current_xpos, current_ypos):
+        while not hit_block or not hit_wall:
+            target_position = (current_xpos, current_ypos)
+            if self.hit_block(target_position[0], target_position[1]):
+                hit_block = True
+                break
+            if self.hit_wall(target_position[0], target_position[1]):
                 hit_wall = True
                 break
-
-            target_position = (current_xpos, current_ypos)
-
-            if not hit_energy_cell and target_position in self.environment.energy_cell_dicts:
-                vision_values[0] = 1
-                hit_energy_cell = True
-
-            if not hit_active_cell and target_position in self.environment.active_cell_dicts:
-                try:
-                    vision_values[1] = 1 / distance
-                except ZeroDivisionError:
-                    vision_values[1] = 0
-                hit_active_cell = True
-
             distance += 1
+
             current_ypos, current_xpos = (current_ypos + direction_y, current_xpos + direction_x)
 
-        if hit_wall:
-            try:
-                vision_values[2] = 1 / distance
-            except ZeroDivisionError:
-                vision_values[2] = 0
+        vision_values = distance
         return vision_values

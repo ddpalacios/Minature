@@ -29,9 +29,13 @@ class Node:
             if not connection_gene.is_expressed:
                 continue
             in_node = connection_gene.getGenome().Node_Genes[connection_gene.in_node]
-            output = in_node.getInput() * connection_gene.weight
+            in_node_input = in_node.getInput()
+            output = in_node_input * connection_gene.weight
+
+
             z += output
         self.set_input(sigmoid(z))
+        print(sigmoid(z))
         return self.input
 
     def set_input(self, input):
@@ -39,6 +43,9 @@ class Node:
 
     def getInput(self):
         return self.input
+
+if __name__ == '__main__':
+    print(sigmoid(.9))
 
 # import numpy as np
 #

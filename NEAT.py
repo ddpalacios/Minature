@@ -2,7 +2,6 @@ import operator
 import random
 import numpy as np
 
-from Cell import Cell
 from Node import Node
 from Genome import Genome
 from ConnectionGene import ConnectionGene
@@ -74,8 +73,6 @@ class NEAT:
         return self.list_of_Species
 
     def reassign_species(self):
-        # self.sort_genomes()
-
         for species in list(self.list_of_Species.values()):
             members = species.sort()
             species.set_representative(list(members.values())[0])
@@ -125,7 +122,7 @@ class NEAT:
             return connection_gene
 
     def remove_worst_genome(self):
-        if len(self.list_of_Species) == 0:
+        if len(self.list_of_Species) == 0 or len(self.list_of_Genomes) < 3:
             return None
         sorted_genomes = {}
         senior_genomes = {}
@@ -212,13 +209,13 @@ class NEAT:
         self.__generate_base_nodes()
 
     def evolve(self):
-
         for genome in list(self.list_of_Genomes.values()):
             genome.calculate_adjusted_fitness()
 
         self.sort_genomes('adjusted_fitness_score')
 
         worst_genome = self.remove_worst_genome()
+
         for species in list(self.list_of_Species.values()):
             species.calculate_average_fitness()
 

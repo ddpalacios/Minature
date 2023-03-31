@@ -9,6 +9,7 @@ pg.init()
 from Cell import Cell
 from Energy import Energy
 from NEAT import NEAT
+from Wall import Wall
 
 sql = SQLLite()
 WindowWidth = 900  # 1600
@@ -27,7 +28,7 @@ minimum_time_alive = 10
 HighestScore = 0
 LowestScore = 0
 ticks = 0
-PixelSize = 5
+PixelSize = 10
 ShowMenu = True
 evolving_time_in_ticks = 20
 screen = pg.display.set_mode((WindowWidth, WindowHeight))
@@ -35,8 +36,8 @@ pg.display.set_caption("Miniature")
 clock = pg.time.Clock()
 FramesPerSecond = 90
 ineligibility_rate = 0.5
-target_direction = 1
-target_direction_lookup = {1: 'UP', 2: 'DOWN', 3: 'LEFT', 4:'RIGHT'}
+target_direction = 0
+target_direction_lookup = {0: 'UP', 1: 'DOWN', 2: 'LEFT', 3: 'RIGHT'}
 environment = Environment(env_width=WindowWidth,
                           env_height=WindowHeight,
                           ineligibility_rate=ineligibility_rate,
@@ -105,6 +106,10 @@ def check_events():
         if event.type == pg.QUIT:
             sys.exit()
 
+        if pg.mouse.get_pressed()[0]:
+            xpos, ypos = get_mouse_position()
+            Wall(environment, xpos, ypos, (255, 255, 255))
+
         if event.type == pg.KEYDOWN:
 
             if event.key == pg.K_SPACE:
@@ -127,22 +132,21 @@ def check_events():
             #     reset()
 
             if event.key == pg.K_1:
-                target_direction = 1
+                target_direction = 0
                 HighestScore = 0
                 LowestScore = 0
             if event.key == pg.K_2:
-                target_direction = 2
+                target_direction = 1
                 HighestScore = 0
                 LowestScore = 0
             if event.key == pg.K_3:
-                target_direction = 3
+                target_direction = 2
                 HighestScore = 0
                 LowestScore = 0
             if event.key == pg.K_4:
-                target_direction = 4
+                target_direction = 3
                 HighestScore = 0
                 LowestScore = 0
-
 
             if event.key == pg.K_RIGHT:
                 rate = float("{0:.1f}".format(environment.ineligibility_rate + .1))
@@ -186,14 +190,14 @@ def check_events():
                 print("Add Node Prob.", environment.neat_environment.add_node_probability)
 
             if event.key == pg.K_UP:
-                environment.neat_environment.minimum_time_alive += 10
+                environment.neat_environment.minimum_time_alive += 5
                 print("Min. Time Alive", environment.neat_environment.minimum_time_alive)
 
             if event.key == pg.K_DOWN:
-                if environment.neat_environment.minimum_time_alive - 10 < 0:
+                if environment.neat_environment.minimum_time_alive - 5 < 0:
                     environment.neat_environment.minimum_time_alive = 0
                 else:
-                    environment.neat_environment.minimum_time_alive -= 10
+                    environment.neat_environment.minimum_time_alive -= 5
                 print("Min. Time Alive", environment.neat_environment.minimum_time_alive)
 
         if event.type == pg.MOUSEBUTTONDOWN:
@@ -201,12 +205,10 @@ def check_events():
             mouse_clicked = pg.mouse.get_pressed()
             if mouse_clicked:
                 mouse_event = event.button
-                if mouse_event == 1:
+                if mouse_event == 3:
                     active_cell = Cell(environment, xpos, ypos, ActiveCellColor)
                     genome = environment.neat_environment.generate_empty_genome()
                     active_cell.set_genome(genome)
-                if mouse_event == 3:
-                    Energy(environment, xpos, ypos, EnergyCellColor)
 
 
 def draw_grid():
@@ -236,10 +238,11 @@ def showMenu():
                                          False,
                                          (255, 255, 255))
 
-    add_node_surface = font.render("Add Node Prob: " + str(neat_environment.add_node_probability), False,(255, 255, 255))
+    add_node_surface = font.render("Add Node Prob: " + str(neat_environment.add_node_probability), False,
+                                   (255, 255, 255))
 
-    target_direction_surface = font.render("Going " + str(target_direction_lookup[target_direction]), False,(255, 255, 255))
-
+    target_direction_surface = font.render("Going " + str(target_direction_lookup[target_direction]), False,
+                                           (255, 255, 255))
 
     sorted_genomes = neat_environment.sort_genomes('adjusted_fitness_score')
     if len(sorted_genomes) > 0:
@@ -274,7 +277,6 @@ def showMenu():
     screen.blit(add_node_surface, (WindowWidth - 200, 150))
     screen.blit(target_direction_surface, (WindowWidth - 200, 180))
 
-
     screen.blit(generation_number_surface, ((WindowWidth // 2) - 60, 10))
     screen.blit(species_number_surface, (10, 10))
     screen.blit(ineligibility_rate_surface, (WindowWidth - 200, 10))
@@ -297,26 +299,36 @@ def showMenu():
 def update():
     global ticks
     for active_cell in environment.active_cell_entities:
+        active_cell.AteFood = False
+        active_cell.HitWall = False
+        active_cell.HitCell = False
+        active_cell.HitBlock = False
+
         genome = active_cell.getGenome()
         vision_inputs = active_cell.scan()
         output = genome.forward(vision_inputs)
-
-        if output == 1:
+        if output == 0:
             active_cell.move_up()
-        elif output == 2:
+        elif output == 1:
             active_cell.move_down()
-        elif output == 3:
+        elif output == 2:
             active_cell.move_left()
-        elif output == 4:
+        elif output == 3:
             active_cell.move_right()
 
-        if output == target_direction:
-            active_cell.TotalEnergyLevel += 1
+        if active_cell.HitBlock or active_cell.HitCell or active_cell.HitWall:
+            active_cell.TotalEnergyLevel -=100
         else:
-            active_cell.TotalEnergyLevel -=10
+            active_cell.TotalEnergyLevel += 1
 
-        genome.calculateFitness()
+
+        # if not active_cell.HitWall and not active_cell.HitCell:
+        #     active_cell.TotalEnergyLevel += 1
+        # else:
+        #     active_cell.TotalEnergyLevel -=1
+
         active_cell.TotalTimeAliveInTicks += 1
+        genome.calculateFitness()
 
     number_of_ticks_to_evolve = get_evolution_rate(ineligibility_rate=environment.ineligibility_rate)
     if number_of_ticks_to_evolve > 0:
@@ -366,6 +378,7 @@ def start():
         environment.active_cell_entities.draw(screen)
         environment.energy_cell_entities.update()
         environment.energy_cell_entities.draw(screen)
+        environment.wall_cell_entities.draw(screen)
         pg.display.update()
         clock.tick(environment.frames_per_second)
 
@@ -383,19 +396,19 @@ def get_evolution_rate(ineligibility_rate):
 
 
 if __name__ == '__main__':
-    TotalPopulation = 10
+    TotalPopulation = 5
     species_threshold = 15
     neat_environment = NEAT(
-        total_input_nodes=24,
-        total_output_nodes=5,
-        add_node_probability=0,
+        total_input_nodes=8,
+        total_output_nodes=4,
+        add_node_probability=0.1,
         species_threshold=species_threshold,
-        add_connection_probability=0,
+        add_connection_probability=0.1,
         weight_change_probability=0.1,
         weight_change_strength=.1,
-        weight_shift_probability=.6,
+        weight_shift_probability=.1,
         weight_shift_strength=1,
         minimum_time_alive=minimum_time_alive,
-        include_bias=True)
+        include_bias=False)
     environment.set_neat_environment(neat_environment)
     start()

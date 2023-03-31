@@ -33,9 +33,13 @@ class Environment:
         self.id = self.sql_db.execute_query("SELECT MAX(id) FROM {}".format(self.entity_name)).fetchone()[0]
         self.active_cell_entities = pg.sprite.Group()
         self.energy_cell_entities = pg.sprite.Group()
+        self.wall_cell_entities = pg.sprite.Group()
+
         self.currentDateTime = datetime.datetime.timestamp(datetime.datetime.now()) * 1000
         self.active_cell_dicts = {}
         self.energy_cell_dicts = {}
+        self.wall_cell_dicts = {}
+
 
     def set_neat_environment(self, neat):
         self.neat_environment = neat
@@ -62,6 +66,9 @@ class Environment:
 
     def add_energy_cell(self):
         self.energy_cell_dicts = {(cell.PosX, cell.PosY): cell for cell in self.energy_cell_entities}
+
+    def add_wall_cell(self):
+        self.wall_cell_dicts = {(cell.PosX, cell.PosY): cell for cell in self.wall_cell_entities}
 
     def IsRunning(self, isRunning=None):
         if isRunning is not None:

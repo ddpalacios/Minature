@@ -19,7 +19,6 @@ class Species:
 
     def breed(self):
         if len(self.members) == 1:
-            self.neat_environment.sort_genomes('adjusted_fitness_score')
             genome1 = list(self.members.values())[0]
             genome2 = list(self.members.values())[0]
         else:
