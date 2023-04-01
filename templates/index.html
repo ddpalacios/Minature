@@ -15,7 +15,7 @@
     }
 
     .main-container {
-    top: 30%;
+    top: 8%;
     padding: 10px;
     text-align: center;
        display: block;
@@ -26,8 +26,39 @@
          background: #F5DEDC;
     }
 
+    .record-btn:hover{
+         background: #F5DEDC;
+    }
+
+    .blink_me {
+  animation: blink 1s ease-in-out infinite alternate;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+
     .custom-btn {
-    font-size: 80px;
+    font-size: 30px;
+    height:90px;
+    width: 80%;
+    padding: 10px;
+    margin-top: 10px;
+
+    transition-duration: 0.4s;
+    background-color: white;
+    color: black;
+    border: 1px solid #000000;
+    }
+
+    .record-btn {
+    font-size: 50px;
     height:150px;
     width: 80%;
     padding: 10px;
@@ -43,10 +74,17 @@
 
 
 <body>
-        <p hidden="true" style="width: 100%; top: 20%; position: relative; font-size:50px;" class="text-center" id="timer">0</p>
+           <p hidden="true" style="width: 100%; top: 10%; position: relative; font-size: 50px; color: red; font-weight: bold;" class="text-center blink_me" id="recording_text_id">Recording...</p>
+
+
+
+
+        <p hidden="true" style="width: 100%; top: 10%; position: relative; font-size:60px; font-weight: bold;" class="text-center" id="timer">0</p>
+
         <div class="main-container">
-              <button  id="recordBtn" class="custom-btn">Record</button>
-               <audio  hidden="true" style="margin-top:5%; width: 50%" controls></audio>
+              <button  id="recordBtn" class="record-btn">Record</button>
+               <audio id="audio_stream_id" style="margin-top: 2%; width: 70%; " controls></audio>
+
               <button hidden="true" id="warm_up_btn"  class="custom-btn">Warm-Up</button>
             <button hidden="true" id="long_tones_btn"  class="custom-btn">Long Tones</button>
             <button hidden="true"  id="harmonics_btn"  class="custom-btn">Harmonics</button>

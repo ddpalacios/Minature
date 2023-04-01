@@ -7,6 +7,11 @@ document.addEventListener("DOMContentLoaded", function() {
     var scale_patterns_btn= document.getElementById("scale_patterns_btn");
     var repertoire_btn = document.getElementById("repertoire_btn");
     var timer = document.getElementById("timer");
+    var audio_stream = document.getElementById("audio_stream_id");
+        var recording_text_id = document.getElementById("recording_text_id");
+
+
+
     var timerInterval = null;
     var timerValue = 0;
     var audio_category = null;
@@ -24,6 +29,18 @@ document.addEventListener("DOMContentLoaded", function() {
         if (timerInterval !== null) {
             return;
         }
+
+       recordBtn.hidden = true;
+       timer.hidden = false;
+       warm_up_btn.hidden = false;
+       long_tones_btn.hidden = false;
+       harmonics_btn.hidden = false;
+              audio_stream.hidden = true;
+       scale_patterns_btn.hidden = false;
+       repertoire_btn.hidden = false;
+              recording_text_id.hidden = false;
+
+
        navigator.mediaDevices.getUserMedia({ audio: true })
                 .then(function(localstream) {
                     stream = localstream
@@ -111,6 +128,15 @@ document.addEventListener("DOMContentLoaded", function() {
          }
           mediaRecorder.stop();
           stop_timer();
+       recordBtn.hidden = false;
+       timer.hidden = true;
+       warm_up_btn.hidden = true;
+       long_tones_btn.hidden =true;
+       harmonics_btn.hidden = true;
+       scale_patterns_btn.hidden = true;
+       repertoire_btn.hidden = true;
+       audio_stream.hidden = false;
+                     recording_text_id.hidden = true;
 
           console.log("clicked " +audio_category);
     }
