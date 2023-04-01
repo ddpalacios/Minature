@@ -1,20 +1,65 @@
 <!DOCTYPE html>
 <html>
-<head></head>
- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="static\main_recording.js"></script>
+<head>
+     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+     <script src="static\main_recording.js"></script>
+
+    <style>
+    html,
+    body {
+    background:#FFF9F9;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    .main-container {
+    top: 30%;
+    padding: 10px;
+    text-align: center;
+       display: block;
+        position: relative;
+    }
+
+    .custom-btn:hover{
+         background: #F5DEDC;
+    }
+
+    .custom-btn {
+    font-size: 80px;
+    height:150px;
+    width: 80%;
+    padding: 10px;
+    margin-top: 10px;
+
+    transition-duration: 0.4s;
+    background-color: white;
+    color: black;
+    border: 1px solid #000000;
+    }
+    </style>
+</head>
+
 
 <body>
-	<button id="recordBtn">Record</button>
-    <button id="stopBtn">Stop</button>
-    <button id="warm_up_btn">Warm-Up</button>
-    <button id="long_tones_btn">LongTones</button>
-    <button id="harmonics_btn">Harmonics</button>
-    <button id="scale_patterns_btn">Scale Pattern</button>
-    <button id="repertoire_btn">Repertoire</button>
-    <p id="timer">0</p>
-    <audio controls></audio>
+        <p hidden="true" style="width: 100%; top: 20%; position: relative; font-size:50px;" class="text-center" id="timer">0</p>
+        <div class="main-container">
+              <button  id="recordBtn" class="custom-btn">Record</button>
+               <audio  hidden="true" style="margin-top:5%; width: 50%" controls></audio>
+              <button hidden="true" id="warm_up_btn"  class="custom-btn">Warm-Up</button>
+            <button hidden="true" id="long_tones_btn"  class="custom-btn">Long Tones</button>
+            <button hidden="true"  id="harmonics_btn"  class="custom-btn">Harmonics</button>
+            <button hidden="true" id="scale_patterns_btn"  class="custom-btn">Scale Pattern</button>
+            <button hidden="true" id="repertoire_btn"  class="custom-btn">Repertoire</button>
+
+
+    </div>
+
+
 </body>
+
+
 
 
 

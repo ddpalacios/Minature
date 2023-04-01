@@ -1,20 +1,25 @@
 document.addEventListener("DOMContentLoaded", function() {
     var recordBtn = document.getElementById("recordBtn");
     var stopBtn = document.getElementById("stopBtn");
+    var warm_up_btn = document.getElementById("warm_up_btn");
+    var long_tones_btn = document.getElementById("long_tones_btn");
+    var harmonics_btn= document.getElementById("harmonics_btn");
+    var scale_patterns_btn= document.getElementById("scale_patterns_btn");
+    var repertoire_btn = document.getElementById("repertoire_btn");
     var timer = document.getElementById("timer");
     var timerInterval = null;
     var timerValue = 0;
+    var audio_category = null;
     let audio = document.querySelector('audio');
     let mediaRecorder;
     let chunks = [];
     let stream;
 
-function createUniqueFileName() {
-  const timestamp = Date.now();
-  const randomNumber = Math.floor(Math.random() * 1000000);
-  return `audio_${timestamp}_${randomNumber}`;
-}
-
+    function createUniqueFileName() {
+      const timestamp = Date.now();
+      const randomNumber = Math.floor(Math.random() * 1000000);
+      return `audio_${timestamp}_${randomNumber}`;
+};
     function start_timer() {
         if (timerInterval !== null) {
             return;
@@ -29,10 +34,8 @@ function createUniqueFileName() {
                        };
                    mediaRecorder.onstop = function(e){
                     console.log("Stopped")
-                    closeMicrophone();
                     const blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
                     chunks = [];
-
                     const audioUrl = URL.createObjectURL(blob)
                     audio.src =  audioUrl;
                     audio_file_name = createUniqueFileName();
@@ -42,7 +45,7 @@ function createUniqueFileName() {
                     formData.append('file_path', blob, audio_file_name);
                     formData.append('file_name', audio_file_name);
                     formData.append('create_date', Date.now());
-                    formData.append('category', 'TEST');
+                    formData.append('category', audio_category);
 
 
                  $.ajax({
@@ -67,34 +70,56 @@ function createUniqueFileName() {
             updateTimerDisplay();
         }, 100);
 
+};
+  function stopMicrophone() {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+  }
 }
-
-
-    function closeMicrophone() {
-      if (stream) {
-        stream.getTracks().forEach(function(track) {
-          track.stop();
-        });
-        stream = null;
-      }
-    }
-
     function stop_timer() {
         if (timerInterval !== null) {
-            mediaRecorder.stop();
             clearInterval(timerInterval);
             timerInterval = null;
             timerValue = 0;
             updateTimerDisplay();
-            closeMicrophone();
+            stopMicrophone();
         }
-    }
-
+    };
     function updateTimerDisplay() {
         timer.textContent = timerValue.toFixed(1);
+    };
+
+    function select_category(event){
+         let button_id = event.target.id
+         switch(button_id){
+            case "warm_up_btn":
+                audio_category = "Warm-Up";
+                break;
+            case "long_tones_btn":
+                audio_category = "Long Tones";
+                break;
+            case "harmonics_btn":
+                audio_category = "Harmonics";
+                break;
+            case "scale_patterns_btn":
+                audio_category = "Scale Pattern";
+                break;
+            case "repertoire_btn":
+                audio_category = "Repertoire";
+                break;
+         }
+          mediaRecorder.stop();
+          stop_timer();
+
+          console.log("clicked " +audio_category);
     }
 
     recordBtn.addEventListener('click', start_timer);
-    stopBtn.addEventListener('click', stop_timer);
+    warm_up_btn.addEventListener('click', select_category);
+    long_tones_btn.addEventListener('click', select_category);
+    harmonics_btn.addEventListener('click', select_category);
+    scale_patterns_btn.addEventListener('click', select_category);
+    repertoire_btn.addEventListener('click', select_category);
 
 });
