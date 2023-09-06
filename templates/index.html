@@ -69,30 +69,27 @@
     color: black;
     border: 1px solid #000000;
     }
+
+
     </style>
+
 </head>
 
 
 <body>
-           <p hidden="true" style="width: 100%; top: 10%; position: relative; font-size: 50px; color: red; font-weight: bold;" class="text-center blink_me" id="recording_text_id">Recording...</p>
-
-
-
-
+        <p hidden="true" style="width: 100%; top: 10%; position: relative; font-size: 50px; color: red; font-weight: bold;" class="text-center blink_me" id="recording_text_id">Recording...</p>
         <p hidden="true" style="width: 100%; top: 10%; position: relative; font-size:60px; font-weight: bold;" class="text-center" id="timer">0</p>
-
-        <div class="main-container">
-              <button  id="recordBtn" class="record-btn">Record</button>
-               <audio id="audio_stream_id" style="margin-top: 2%; width: 70%; " controls></audio>
-
-              <button hidden="true" id="warm_up_btn"  class="custom-btn">Warm-Up</button>
-            <button hidden="true" id="long_tones_btn"  class="custom-btn">Long Tones</button>
-            <button hidden="true"  id="harmonics_btn"  class="custom-btn">Harmonics</button>
-            <button hidden="true" id="scale_patterns_btn"  class="custom-btn">Scale Pattern</button>
-            <button hidden="true" id="repertoire_btn"  class="custom-btn">Repertoire</button>
-
-
+    <div class="main-container">
+              <button id="recordBtn" class="record-btn">Record</button>
+               <audio id="audio_stream_id" style="margin-top: 2%; width: 70%; " controls=""></audio>
+              <button hidden="true" id="warm_up_btn" class="custom-btn">Warm-Up</button>
+            <button hidden="true" id="long_tones_btn" class="custom-btn">Long Tones</button>
+            <button hidden="true" id="harmonics_btn" class="custom-btn">Harmonics</button>
+            <button hidden="true" id="scale_patterns_btn" class="custom-btn">Scale Pattern</button>
+            <button hidden="true" id="repertoire_btn" class="custom-btn">Repertoire</button>
     </div>
+
+
 
 
 </body>
@@ -103,119 +100,5 @@
 
 
 </html>
-
-<!--<head>-->
-<!--	<title>Record/Stop/Reset Timer</title>-->
-<!--	<script>-->
-<!--		var timerInterval;-->
-<!--		var startTime;-->
-<!--		var elapsedTime = 0;-->
-<!--		var audioElement;-->
-
-<!--		function startTimer() {-->
-<!--			startTime = Date.now() - elapsedTime;-->
-<!--			timerInterval = setInterval(updateTimer, 10);-->
-<!--			document.getElementById("recordBtn").innerHTML = "Stop";-->
-<!--			document.getElementById("recordBtn").onclick = stopTimer;-->
-<!--			audioElement = new Audio();-->
-
-
-<!--			navigator.mediaDevices.getUserMedia({ audio: true })-->
-<!--			  .then(function (stream) {-->
-<!--				const audioContext = new AudioContext();-->
-<!--				const source = audioContext.createMediaStreamSource(stream);-->
-<!--				const analyser = audioContext.createAnalyser();-->
-
-<!--				// Set the FFT size for the AnalyserNode (must be a power of 2)-->
-<!--				analyser.fftSize = 2048;-->
-
-<!--				// Connect the audio stream source to the analyser-->
-<!--				source.connect(analyser);-->
-
-<!--				// Create a buffer to hold the audio data-->
-<!--				const bufferLength = analyser.frequencyBinCount;-->
-<!--				const dataArray = new Float32Array(bufferLength);-->
-
-<!--				function updateAudioData() {-->
-<!--				  // Get the audio data from the analyser-->
-<!--				  analyser.getFloatTimeDomainData(dataArray);-->
-
-<!--				  // Print the audio data to the console-->
-<!--				  console.log(dataArray);-->
-
-<!--				  // Continue updating the audio data-->
-<!--				  requestAnimationFrame(updateAudioData);-->
-<!--				}-->
-
-<!--				updateAudioData();-->
-<!--			  })-->
-<!--		}-->
-
-<!--		function stopTimer() {-->
-<!--			clearInterval(timerInterval);-->
-<!--			elapsedTime = Date.now() - startTime;-->
-<!--			document.getElementById("timer").innerHTML = formatTime(elapsedTime);-->
-<!--			document.getElementById("recordBtn").innerHTML = "Reset";-->
-<!--			document.getElementById("recordBtn").onclick = resetTimer;-->
-<!--			document.getElementById("audioSlider").style.display = "block";-->
-<!--		}-->
-
-<!--		function resetTimer() {-->
-<!--			clearInterval(timerInterval);-->
-<!--			elapsedTime = 0;-->
-<!--			document.getElementById("timer").innerHTML = "00:00:00.000";-->
-<!--			document.getElementById("recordBtn").innerHTML = "Record";-->
-<!--			document.getElementById("recordBtn").onclick = startTimer;-->
-<!--			document.getElementById("audioSlider").style.display = "none";-->
-<!--			audioElement.srcObject = null;-->
-<!--		}-->
-
-<!--		function updateTimer() {-->
-<!--			var currentTime = Date.now();-->
-<!--			elapsedTime = currentTime - startTime;-->
-<!--			document.getElementById("timer").innerHTML = formatTime(elapsedTime);-->
-<!--		}-->
-
-<!--		function formatTime(milliseconds) {-->
-<!--			var hours = Math.floor(milliseconds / (1000 * 60 * 60));-->
-<!--			var minutes = Math.floor(milliseconds / (1000 * 60)) % 60;-->
-<!--			var seconds = Math.floor(milliseconds / 1000) % 60;-->
-<!--			var milliseconds = milliseconds % 1000;-->
-<!--			return padZero(hours, 2) + ":" + padZero(minutes, 2) + ":" + padZero(seconds, 2) + "." + padZero(milliseconds, 3);-->
-<!--		}-->
-
-<!--		function padZero(num, size) {-->
-<!--			var padded = "000" + num;-->
-<!--			return padded.substr(-size);-->
-<!--		}-->
-<!--	</script>-->
-<!--	<style>-->
-<!--		#audioSlider {-->
-<!--			display: none;-->
-<!--			width: 100%;-->
-<!--			height: 50px;-->
-<!--			background-color: #ddd;-->
-<!--			border: 1px solid #ccc;-->
-<!--			border-radius: 5px;-->
-<!--			padding: 10px;-->
-<!--			box-sizing: border-box;-->
-<!--		}-->
-<!--	</style>-->
-<!--</head>-->
-<!--<body>-->
-<!--	<h1>Record/Stop/Reset Timer</h1>-->
-<!--	<p>Press the button below to start recording.</p>-->
-<!--	<button id="recordBtn" onclick="startTimer()">Record</button>-->
-<!--	<p id="timer">00:00:00.000</p>-->
-<!--	<div id="audioSlider">-->
-<!--		<input type="range" min="0" max="100" value="50" onchange="setAudioPosition()">-->
-<!--	</div>-->
-<!--<script>-->
-<!--	function setAudioPosition() {-->
-<!--		var slider = document.querySelector("#audioSlider input");-->
-<!--		var position = slider.value / 100 * audioElement.duration;-->
-<!--		audioElement.currentTime = position;-->
-<!--	}-->
-<!--</script>-->
 
 
